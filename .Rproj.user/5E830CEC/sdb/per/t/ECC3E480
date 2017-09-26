@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "This package constitutes an interactive R problem set based on the RTutor package (https://github.com/skranz/RTutor). \n\n---\nThis problem set guides the user throug the paper \"Wall Street and the Housing Bubble\" by Ing-Haw Cheng, Sahil Raina and Wei Xiong, which can be found here: [link](https://www.aeaweb.org/articles?id=10.1257/aer.104.9.2797)\n---\n\n## 1. Installation\n\nRTutor and this package is hosted on Github. To install everything, run the following code in your R console.\n```s\nif (!require(devtools))\n  install.packages(\"devtools\")\nsource_gist(\"gist.github.com/skranz/fad6062e5462c9d0efe4\")\ninstall.rtutor(update.github=TRUE)\n\ndevtools::install_github(\"mwentz93/RTutorWallStreet\", upgrade_dependencies=FALSE)\n```\n\n## 2. Show and work on the problem set\nTo start the problem set first create a working directory in which files like the data sets and your solution will be stored. Then adapt and run the following code.\n```s\nlibrary(RTutorWallStreet)\n\n# Adapt your working directory to an existing folder\nsetwd(\"C:/problemsets/RTutorWallStreet\")\n# Adapt your user name\nrun.ps(user.name=\"Jon Doe\", package=\"RTutorWallStreet\",\n       load.sav=TRUE, sample.solution=FALSE)\n```\nIf everything works fine, a browser window should open, in which you can start exploring the problem set.\n",
+    "created" : 1506453838071.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1110132832",
+    "id" : "ECC3E480",
+    "lastKnownWriteTime" : 1506453803,
+    "last_content_update" : 1506453803,
+    "path" : "C:/Users/Marius/Desktop/RTutorWallStreet/RTutorWallStreet/README.md",
+    "project_path" : "README.md",
+    "properties" : {
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "markdown"
+}

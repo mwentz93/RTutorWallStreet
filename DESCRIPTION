@@ -1,0 +1,12 @@
+Package: RTutorWallStreet
+Type: Package
+Title: RTutor problem set WallStreet
+Version: 0.1
+Date: 2017-26-09
+Author: Marius Wentz
+Maintainer: Marius Wentz <wentz.marius@gmail.com>
+Description: RTutor problem set WallStreet
+License: 
+	Problem set content: Creative Commons (CC BY-SA)
+	Package code: GPL >= 2.0
+Depends: RTutor, foreign, ggplot2, stargazer, dplyr, yaml, scales, lfe, lmtest, reshape2, sandwich, broom, ggmap, directlabels, grid, ggrepel, gridExtra

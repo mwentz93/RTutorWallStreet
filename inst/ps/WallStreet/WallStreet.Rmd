@@ -1,0 +1,1616 @@
+# Wall Street and the Housing Bubble - An Interactive Analysis with R
+
+
+```{r 'check_ps', include=FALSE}
+
+user.name = '' # set to your user name
+
+library(RTutor)
+check.problem.set('WallStreet', ps.dir, ps.file, user.name=user.name, reset=FALSE)
+
+# Run the Addin 'Check Problemset' to save and check your solution
+```
+
+Author: Marius Wentz
+
+<style>
+.shiny-input-container:not(.shiny-input-container-inline) {
+    width: 600px;
+e}
+</style>
+
+
+I would like to welcome you to this interactive Problem Set based on "Wall Street and the Housing Bubble". The Problem Set, which is a part of my bachelor thesis (Ulm University) will guide you through the paper "Wall Street and the Housing Bubble" by Ing-Haw Cheng, Shail Raina and Wei Xiong, published in the "American Economic Review" in 2014. This can, alongside with the data sets used for the calculations, be downloaded here: [link](http://dx.doi.org/10.1257/aer.104.9.2797). It is not necessary to download the provided data to work through this Problem Set but if you want to perform your own calculations, the data is available using the link from above.
+
+To work properly, this Problem Set requires an internet connection!
+
+## Exercise 0 - Content
+
+1 Introduction
+
+2 Sampling
+
+3.1 The Strong Full Awareness Hypothesis
+
+3.2 Omitted Variable Bias
+
+3.3 Cluster Robust Standard Errors
+
+4 The Weak Full Awareness Hypothesis
+
+5 Performance
+
+6.1 Income Shocks
+
+6.2 Consumption
+
+7 Financing
+
+8 Conclusion
+
+9 References & Changes on Data sets
+
+### About the Exercises
+
+It is not necessary to solve the exercises in the original order, but since later exercises may require knowledge acquired in earlier exercises, it is recommended to solve them as planned.
+
+Within an exercise, you must solve one code block after another except the infoboxes and quizzes which are optional. You will get an introduction on how to solve those code blocks within the first exercise.
+
+To ease calculation and visualization, several changes on the original data sets have been made. Those changes are documented in Exercise 9.
+
+## Exercise 1 - Introduction
+
+The paper "Wall Street and the housing bubble" (Cheng, Raina and Xiong, 2014) deals with the question if Wall Street, or the people working there to be more precise, showed signs of awareness of the bubble and an upcoming crisis in the US real estate market. Answering this question is helpful if we want to understand the reasons that led to the financial crisis, since it is widely acknowledged that the securitization business, especially the originate to distribute model contributed largely to the crisis. This is not only due to enabling excessive credit expansion but also deteriorating credit quality and therefore financial stability as mentioned by Bernanke (2008) or Jobst (2008). Awareness of the bubble would reveal even more serious incentive problems as already thought.
+
+### The Process of Securitization
+
+As you can see in Figure 1.1, the process of securitization can be described as a pass-through of assets from the originator to the market. The originator of assets like housing loans, pools and sells them to an arranger (usually an investment bank), who constructs a special purpose vehicle ("SPV"). The SPV builds principal-bearing securities from those pooled assets and sells them through asset managers or other services to investors. Those securities may be structured into various classes or tranches of different asset quality which are then rated by several rating agencies and may be insured by insurers. These securities are backed by the underlying assets as collateral, in our case the homes for which mortgages were sold. (Paligorova, 2009)
+
+<img src="C:/Users/Marius/OneDrive/Bachelorarbeit/WallStreet/Final/Securitization.jpg" height="500px" width="600px" max-width="100% fig.align = "center" />
+
+*Figure 1.1:* The process of securitization (Paligorova, 2009)
+
+This process has several advantages for the origination institutions. Assets are taken off their balance sheet after passing them through into the markets. Institutions can exploit a different funding channel and borrowing costs are reduced. (Jobst, 2008) At the same time, it can lead to severe incentive problems. If the institution simply originates the securities and passes them through (originate to distribute), it is not necessarily in their interest to originate high quality securities. (ECB, 2008) Deteriorating credit quality was also possible since the rating agencies could not or did not want to evaluate the quality of the assets properly which could be caused by poor valuation methods or an incentive problem of rating agencies since they were mostly paid by the issuer rather than by the investor (IMF, 2009). Additionally, regulatory institutions couldn't properly monitor the possible misbehavior of the originating and issuing institutions (IMF, 2013). Altogether, these factors led to instability in the financial sector.
+
+### Why is it interesting to conduct such an analysis?
+
+After the housing bubble and the financial crisis, there was a lot of research that implied that distorted beliefs may have had a significant impact on forming of the bubble. Benabou (2013) found that overoptimism concerning prices might have arisen from wishful thinking of people working in financial services. Additionally, Brunnermeier and Julliard (2008) emphasized the effect of money illusion, implying that decisions whether to buy or rent were based on nominal interest rates, underestimating the effect of future mortgage payments in an environment of low inflation. Shiller (2007) even called the boom a "social epidemic that encourages a view of housing as an important investment opportunity". Even though Smith and Smith (2006) saw homes as a robust investment, they also mentioned "unrealistic expectations" about the housing market. But even though, relatively little research dealt with beliefs of people working at Wall Street. This gives rise to the question at hand. If we find that Wall Street managers were aware, there would be an even more severe stimulus problem than previously thought. This would make changes in contracts necessary. If they were not aware even though there were signs that could have led to them recognizing that the bubble exists, there must be a problem in the way information is processed and beliefs are formed in financial enterprises. (Cheng et al, 2014)
+
+### How will we do this analysis?
+
+Throughout this problem set we will roughly follow the structure of "Wall Street and the Housing Bubble" (Cheng et al, 2014). We got an overview over the situation that led to the housing bubble. Next, we will look at the history of the bubble, analyzing data from the Case-Shiller House Price Index.
+
+Afterwards we will analyze differences in housing transactions, purchase behavior and financing terms between three different groups concerning home transactions between 2000 and 2010 (since the year 2010 is the last year for which data for the complete year is available). The group of **informed agents**, consists of **securitization agents** (non-executives working in the field of securitization), included are both investors in and issuers of securitized products. The group of S&P500 **equity analysts** forms the **first control group**, excluding those who cover firms involved in building real estate. This group is chosen since it's a self-selected group that is comparable to the members of the securitization group (e.g. concerning career risk or life cycle) without having access to the specific information that the group of securitization agents can access and furthermore experienced income shocks comparable to those the securitization agents experienced. The third group, the **second control group**, includes **lawyers** selected such that the location and age matches those of the securitization agents. They cover the wealthy part of the society that doesn't have access to specific information or special financial education and is therefore another suitable control group.
+
+Like Cheng et al. (2014), we will compare the three groups, regarding their exposure to the housing market, the performance of their "investment portfolio", their financing terms and their consumption regarding their income by testing the following hypotheses.
+
+### Hypotheses to test:
+
+1) **Full Awareness I. Market Timing**: The securitization agents timed the market by divesting in the boom period.
+
+2) **Full Awareness II. Cautious Form**: The agents didn't increase the exposure  of their portfolio to the housing market.
+
+3) **Performance**: The portfolio of securitization agents performed significantly better than these of the other groups.
+
+4) **Conservative Consumption**: The securitization agents used less of their available income for their purchases.
+
+After testing these four hypotheses, we will check if another factor, the interest rates faced by the three mentioned groups could have influenced their investment behavior. Before starting the analysis, what do you think, will the analysis present evidence that the securitization agents showed signs of awareness concerning the housing bubble?
+
+#! addon__quiz__outcome
+
+
+## Overview over the development of the Housing Bubble
+
+Before we look at the data we will try to get a quick overview over the development of the bubble. We will look at the 20-Composite Case-Shiller Home Price Index, the main real estate index of the USA, distributed by S&P, which compromises the 20 most important regions in the USA (see http://us.spindices.com/indices/real-estate/sp-corelogic-case-shiller-20-city-composite-home-price-nsa-index). We want to visualize the development of those indices so we have to load the data in R and plot it. I prepared a data set that contains three regions that are of interest, namely New York, Los Angeles and Chicago and the 20-Composite. We will focus on those regions since most of the properties we will analyze is located there. (Cheng et al, 2014a)
+
+### Map of the Case-Shiller Home Price Indices Regions
+
+Before plotting the indices of the regions New York, Los Angeles, Chicago and the 20-Composite we will take a look at the locations of the regions included in the 20-Composite illustrated in Figure 1.2. The code that was used to create this map is visible in a so-called infobox below the map. infoboxes will be used throughout this problem set to add information about R functions, used code or additional explanations.
+
+<img src="C:/Users/Marius/OneDrive/Bachelorarbeit/WallStreet/Final/map_caseshiller.png" height="500px" width="750px" max-width="100% fig.align = "center" /> 
+
+*Figure 1.2*: Illustration of the locations of the Case-Shiller Composite-20 home price index. Created using `ggmap` which accesses Google Maps.
+
+info("Map of Case-Shiller Locations") # Run this line (Strg-Enter) to show info
+
+### The Case-Shiller Home Price Index from 2000 to 2010
+
+First, we will use the command `read.table()` to load the `caseshiller` data set which is stored in .txt format.
+
+info("read.table()") # Run this line (Strg-Enter) to show info
+
+**Task**: Load the Case-Shiller data stored in `caseshiller.txt` data set using `read.table()` and store it in `cs` (cs will then be the name of the object of class data frame). First, you have to press `edit` to be able to type your code, then you have to type your code and press `check` when finished. If you made a mistake and can't figure out how to solve it, you can get a hint by pressing the `hint` button. If you can't figure it out despite the hint, you can always check the `solution` button to jump to the solution immediately. If you want to take a look at the data you are working on, press `data` after solving the chunk to see the data set. You will be leaded to the `Data Explorer` tab and have to click on the tab you were working on after you finished looking at the data set to get back to the exercise.
+
+```{r "1___Introduction__4"}
+# Enter your code below:
+```
+
+
+Now, let's look at the loaded data. We will not use the `data` button, but the function `head()` which gives a brief overview by showing the first few rows contained in `cs`. It may be that you already used the function `colnames()`. The edge of `head()` is that it shows the first entries rather than only the names of the columns, which gives us a nicer overview than `colnames()`.
+
+**Task**: Give out the names and the columns as well as the first entries of `cs`. You can simply press `edit` and `check` since the code is already provided.
+
+```{r "1___Introduction__5"}
+colnames(cs)
+head(cs)
+```
+
+As you can see `cs` contains the date and indices data for New York, Chicago, Los Angeles and the 20-Composite, normalized to 100 in January 2000.
+
+info("Long and wide format") # Run this line (Strg-Enter) to show info
+
+Before plotting the data series, they must be converted from wide to long format using the R function `melt()` from the `reshape2` package, which enables us to use the resulting data frame as input for `ggplot()`. (Wickham, Chapter 7, 2009)
+
+info("melt") # Run this line (Strg-Enter) to show info
+
+After melting the data set, we will use `tail()` to show the last entries of the molten data frame. `tail()` is used analogously to `head()`, the input needed is simply the data set.
+
+**Task**: Use `melt()` to bring `cs` in long format (the id is the date), store it in the object `cs_melted` and show the last rows of that data set. Before using `melt()` the package `reshape2` must be loaded. Visualize `cs_melted` afterwards using `tail()`.
+
+```{r "1___Introduction__9"}
+# Enter your code below:
+```
+
+
+
+After preparing our data, we are ready to plot the Case-Shiller Home Price indices which is now stored in `cs_melted`. To do so, we will use `ggplot()` a R function which enables us to do a lot of different, professional plots which can be modified adding commands. We will plot time series for all three areas and the composite 20. If you require more knowledge about `ggplot()`, take a look at the associated infobox.
+
+info("ggplot()") # Run this line (Strg-Enter) to show info
+
+**Task**: Load the library `ggplot2`, create a plot of `cs_melted` and store it in `p1` using `ggplot()`. Use the command `as.Date()` on the x values while determining the aesthetics to tell `ggplot()` to handle those values like dates. Add a line with `geom_line()` and change the theme to `theme_bw()`, a theme often used to display scientific data by adding that command with a `+`. Output `p1` afterwards by simply typing `p1` in.
+
+```{r "1___Introduction__11",fig.width=9, fig.height=6, dev='svg'}
+# Enter your command below:
+```
+
+
+*Figure 1.3:* Development of the Case-Shiller Home Price Indices Composite-20 and New York, Los Angeles and Chicago. Based on Figure 1 - Home Price Indices from "Wall Street and the Housing Bubble" (p. 2801).
+
+Figure 1.3 is sufficient if you only want to glance quickly at some data series but it isn't professional yet. There is no header, the title of the x and y axis are not precise and the labels of the x axis are not yet sufficient numerous. We will start with the plot we did above and add the other features step by step. `as.Date()` tells `ggplot()` to handle the x values as if they were dates.
+
+**Task**: Add a header and the axis labels using `labs()`. If we want to add the title we must set the parameter `title` to the name we want to assign to it. The same procedure is used for both the x- and y- axis. We will store it in object `p2` and plot it afterwards. The code is provided, simply press `check`.
+
+```{r "1___Introduction__12",fig.width=9, fig.height=6, dev='svg'}
+p2 <- p1 + 
+  labs(title = "Case-Shiller Home Price Indices", x = "Year", y = "Normalized Index Value")
+p2
+```
+
+*Figure 1.4:* Development of the Case-Shiller Home Price Indices Composite-20, New York, Los Angeles and Chicago. Differs from Figure 1.3 in such way that the names of the x- and y- axis and the title are changed. Based on Figure 1 - Home Price Indices from "Wall Street and the Housing Bubble" (p. 2801).
+
+To enhance clarity, we modify the plot such that the every year is displayed.
+
+**Task**: Modify the x axis in a way that every year is displayed, use `scale_x_date` which configures default scales for the data/time classes. Store it in `p3` and plot it again afterwards. To be able to use `scale_x_date`, we must load the package `scales` beforehand. The code is already provided, so simply press `check`.
+
+```{r "1___Introduction__13",fig.width=9, fig.height=6, dev='svg'}
+library(scales)
+p3 <- p2 + 
+  scale_x_date(labels = date_format("%b %Y"), breaks = date_breaks("1 year"))
+p3
+```
+
+*Figure 1.5:* Development of the Case-Shiller Home Price Indices Composite-20, New York, Los Angeles and Chicago. Differs from Figure 1.4 in such way that the x axis is manipulated that every year is shown. Based on Figure 1 - Home Price Indices from "Wall Street and the Housing Bubble" (p. 2801).
+
+The problem of Figure 1.5 is obviously the position of the labels of the x axis, the space is simply not enough. We can solve that issue by rotating the labels by 45 degrees. Additionally, we can gain more space for the plot by putting the legend on top and remove useless information by removing the title of the legend.
+
+**Task**: Rotate the x axis labels by 45 degrees, put the legend on top and remove the title of the legend using `theme()`. Since you don't have to write any code here, simply press `check`.
+
+```{r "1___Introduction__14",fig.width=9, fig.height=6, dev='svg'}
+p4 <- p3 + 
+  theme(axis.text.x = element_text(angle=45, hjust = 1), legend.position = "top", legend.title = element_blank())
+p4
+```
+
+*Figure 1.6:* Development of the Case-Shiller Home Price Indices Composite-20, New York, Los Angeles and Chicago. Differs from Figure 1.5 in such way that the legend is on top, the title of the legend is deleted and the labels of the x axis are rotated by 45 degrees. Based on Figure 1 - Home Price Indices from "Wall Street and the Housing Bubble" (p. 2801).
+
+Figure 1.6 is a nice plot with a fitting header, axis titles, axis labels and a legend that allows the plot to be larger.
+
+***Why is this plot helpful for our analysis?***
+
+As you can see in Figure 1.6, all four indices climbed moderately from 2000 to 2003, rose steep until mid-2006 and plunged after that date. This leads to the three periods the authors focus on. The pre-boom (from 2000 to 2003), the boom period (from 2004 to 2006) and the bust period (from 2007 to 2010). This is important for the analysis since we will not only analyze the difference between the three groups, but also differences in time of the securitization group. Especially the boom period will be of interest for us.
+
+We will add a shaded region to the plot to account for our three periods.
+
+**Task**: Add a shaded region to the plot using `annotate()`. Press `check` to do so.
+
+```{r "1___Introduction__15",fig.width=9, fig.height=6, dev='svg'}
+p5 <- p4 +
+  annotate("rect", xmin = as.Date("2004-01-01", "%Y-%m-%d"), xmax = as.Date("2007-01-01", "%Y-%m-%d"), ymin = 75, ymax = 300, alpha = .2, fill = "red")
+p5
+```
+
+*Figure 1.7:* Development of the Case-Shiller Home Price Indices Composite-20, New York, Los Angeles and Chicago. Differs from Figure 1.6 in such way that the boom period is shaded. Based on Figure 1 - Home Price Indices from "Wall Street and the Housing Bubble" (p. 2801).
+
+This exercise refers to the pages 2797 - 2805 of "Wall Street and the Housing Bubble".
+
+## Exercise 2 - Sampling
+
+After getting a first overview over the situation that gives rise to our analysis, let's take a look on how the samples of the three groups were constructed before turning our focus towards the four hypotheses. 
+
+Cheng et al. (2014) sampled three groups (one group of informed agents and two control groups) consisting of 400 people each (and therefore 1200 overall) following some sampling rules.
+
+### The groups
+
+The **group of informed agents**, the **securitization agents** group is sampled out of the 2006 American Securitization Forum's, attended by 1,760 people working for all kind of service providers in the securitization branch, including the most important international investment banks like Deutsche Bank or UBS, US investment banks like Lehman Brothers or Merrill Lynch, large commercial banks like Wells Fargo and monoline insurance companies like AIG (Cheng, Raina and Xiong, 2014a). The strategy of the authors was to sample enough people randomly so that they ended up with 400 people after excluding some due to several reasons that will be dealt with in the paragraph **Sampling Rules**. People working at large institutions and institutions particularly associated with the crisis were over-sampled.
+
+The **first control group**, the **equity analysts** group, consists of analysts randomly chosen from those covering S&P 500 companies during 2006, excluding home-building companies. This group was chosen since it is a self selected group comparable to the informed agents concerning wealth and career risk while not having the specific information about the housing market, a securitization agent might have. Furthermore, they might show similar income patterns since they work for comparable companies. Here - again - enough people were selected so that after excluding people consistent with the rules we will deal later with, 400 equity analysts are sampled from a total of 2978 analysts.
+
+The **second control group**, the **lawyers** were sampled randomly from the Martindale-Hubbell Law Directory, a national lawyer directory, matched on age and location of the securitization agents to cover the wealthy part of the society without access to housing market information. Real estate Lawyers were excluded. A total of 406 were sampled to obtain the desired 400.
+
+All in all, we end up with 1200 people to be analyzed. The authors collected the data using the LexisNexis Public Records database. LexisNexis provides public records such as property records, addresses, vehicle titles, or business records, social media and employment information and thus enables the user to track down individuals. (https://www.lexisnexis.com/en-us/products/public-records.page) Additionally, they used data from the Home Mortgage Disclosure Act and LinkedIn. If you are more interested in the way the data was collected or want to collect the data yourself, take a look on Cheng et al. (2014a).
+
+The people that were randomly selected are stored with keyident, age, age category, group information and a column named Mreason containing information about the exclusion rules in the data set `person_dataset.dta`.
+
+info("read.dta()") # Run this line (Strg-Enter) to show info
+
+**Task**: Load the data set `person_dataset.dta` using `read.dta()` from the `foreign` library and store it in `pers`. To do so replace the question marks and remove the leading `#` in the code below.
+
+```{r "2___Sampling__3"}
+# li???(for???)
+# pe?? <- rea?.???("perso?_????.d??")
+```
+
+
+**Task**: Show the first rows of `pers`.
+
+```{r "2___Sampling__4"}
+# Enter your code below:
+```
+
+
+### Sampling Rules
+
+Why are some people not included in the final sample?
+
+To answer that question, let's take a look at the variable `Mreason`, which specifies the reasons why someone is excluded. Be aware that not every entry necessarily is a reason to exclude a person. We will extract the unique entries of that variable using `unique()` from the `base` package (it's not necessary to load that package since it is already loaded by default).
+
+info("column reference in R") # Run this line (Strg-Enter) to show info
+
+**Task**: Extract the unique characteristics of `Mreason` from `pers`. Extract them by referring to the name of the column. 
+
+```{r "2___Sampling__7"}
+# Enter your code below:
+```
+
+#! addon__quiz__inclusion
+
+
+***What's the reasoning of Cheng et al. (2014) behind this exclusion?***
+
+People that have the entry **international** do not live in the US. Those **not working in housing** are excluded because they don't have sensitive information about the housing business. Those who are **multiple by same ident** could not be clearly assigned. The people that are **not found** are obviously useless for any analysis while those with the entry **C[E/F/O]O** are not mid-level but top-level managers. The people with the entry **deceased** are also useless for our analysis since they don't provide data for the whole era.
+
+***Why does it make sense to focus on mid-level and exclude top-level managers?***
+
+As discussed by the authors on page 2801 and 2802 of the paper, mid-level managers are very familiar with securitized securities since they are selling and buying them and are therefore closer tied to those securities. Thus, they have the possibility to identify problems that might exist in this sector way earlier than any C level executive.
+
+After applying those rules, we end up with 400 securitization agents, 400 equity analysts and 400 lawyers to be analyzed.
+
+This exercise refers to the pages 2801 - 2807 of "Wall Street and the Housing Bubble".
+
+## Exercise 3.1 - The Strong Full Awareness Hypothesis
+
+Now we shift our focus towards the analysis about possible differences in home transactions between securitization agents and their controls during the boom period.
+
+We will start with the first hypothesis. The first hypothesis is that the securitization agents timed the market by divesting during the boom period. We will therefore try to answer the question if securitization agents tried to ride the bubble by divesting more during boom (2004 to 2006) compared to both their own pre-boom numbers and their controls. Why is this called the strong full awareness hypothesis? As mentioned by Cheng et al. (2014) this is due to the costs associated with selling a home and possible problems to time the market properly. If they avoided increasing the wealth invested in real estate rather than divesting due to these reasons, we end up with testing the weak form of full awareness which we will do in exercise 4.
+
+Before doing so, let's take another look at the plot from Exercise 1.
+
+**Task**: Plot the Case-Shiller Home Price Indices. The code below performs the same steps as the ones we did in Exercise 1, press `check` to plot the indices.
+
+```{r "3_1___The_Strong_Ful",fig.width=9, fig.height=6, dev='svg'}
+# First we load the caseshiller dataset
+cs <- read.table("caseshiller.txt")
+
+# Then we convert it to long format
+cs_melted <- melt(cs, id = "date")
+
+# And we finally plot the indices like in Exercise 1
+ggplot(data = cs_melted, aes(x = as.Date(date), y = value, color = variable)) +
+  geom_line() +
+  theme_bw() +
+  labs(title = "Case-Shiller Home Price Indices", x = "Year", y = "Normalized Index Value") +
+  scale_x_date(labels = date_format("%b %Y"), breaks = date_breaks("1 year")) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1), legend.position = "top", legend.title = element_blank()) +
+  annotate("rect", xmin = as.Date("2004-01-01", "%Y-%m-%d"), xmax = as.Date("2007-01-01", "%Y-%m-%d"), ymin = 75, ymax = 300, alpha = .2, fill = "red")
+```
+
+*Figure 1.7:* Development of the Case-Shiller Home Price Indices Composite-20, New York, Los Angeles and Chicago. Based on Figure 1 - Home Price Indices from "Wall Street and the Housing Bubble" (p. 2801).
+
+As you can see in Figure 1.7, during the boom period (red), prices were high, so it would have been a good decision to sell the properties especially from 2005 until the end of 2006, given awareness of the bubble and the ability to time the market. Even after 2006, there is a time frame where it was possible to sell at a high price (approximately until September 2007), so why did the authors not set the time frame symmetrically around the peak? They imply why they didn't do so. It is mentioned in the paper (see page 2821) and they present evidence in online appendix B (Table B12) that divestment behavior of the securitization group after 2006 is mainly driven by those who lost their jobs after 2006.
+
+### 3.1.1 Divestiture Intensity
+
+We will answer the question raised in the paragraph above by analyzing the so-called **divestiture intensity** which is defined as follows:
+
+$$\textrm{Divestiture Intensity}_t =\frac {\textrm{Divestitures}_t} { \textrm{People Eligible for Divestiture}_t}\ .$$
+
+(Cheng et al, 2014)
+
+The divestiture intensity is simply all divestitures (selling of homes without buying another one) divided by the people eligible for divestitures, namely all people that currently own a home. But this formula has a disadvantage. As mentioned by the Cheng et al. (2014), a person that buys a home in January may divest in November, but due to the nature of our formula the person will be excluded in our considerations. But why should this intensity represent a good measurement for full awareness?
+
+As mentioned by Cheng et al. (2014) the reason is that the agents had maximum incentive to avoid losses in their house portfolio since it usually represents a significant share of their wealth. If they were aware that the bubble existed, they would have tried to decrease the share of wealth exposed to the housing market to minimize the potential losses faced.
+
+#! addon__quiz__Divestiture Intensity
+
+
+### 3.1.2 Divestiture Intensities from 2000 to 2010
+
+First, we will look at the raw (no controls included) divestiture intensities by simply computing the intensities for every year and every group and plot them.
+
+**Task**: Load the data set `personyear_trans_panel.dta` and store it in `trans`. This date set is modified in such ways that the levels of `group` are in a different order which was done to ease visualization of the regressions later. Also, the column names are changed. Store the data set in `trans`. Simply press `check` to do so.
+
+```{r "3_1___The_Strong_Ful__2"}
+trans <- read.dta("personyear_trans_panel.dta")
+```
+
+**Task**: Visualize the first rows of `trans` using `head()`. Press `check` to do so.
+
+```{r "3_1___The_Strong_Ful__3"}
+head(trans)
+```
+
+info("personyear_trans_panel.dta") # Run this line (Strg-Enter) to show info
+
+If we want to extract specific rows defined by characteristics of different variables, the `dplyr` package provides a function called `filter()`, that extracts rows from an existing data frame. If you didn't use this function yet or if you are not sure how to use it any more, click on the infobox below to get additional information including some examples about how to use it.
+
+info("filter()") # Run this line (Strg-Enter) to show info
+
+Now we need a data frame that contains only those entries, where the person is eligible for divestiture, namely those where `homeowner` is equal to 1 (since only people already owning a home are eligible for divestitures). That allows us to take the mean of the divestiture variable of the created data frame as divestiture intensity, since all people in this sample are eligible for divestiture.
+
+**Task**: Construct a data frame that contains all entries from `trans` and has the properties that the variable `homeowner` is equal to 1 and the variable `Year` is not equal to 2011 using the `filter()` function. Store it in `trans` again. To be able to use `filter()`, load the `dplyr` package first. To do so, delete the leading `#` and replace the question marks with your own code.
+
+```{r "3_1___The_Strong_Ful__6"}
+#library(????)
+#trans <- filter(???, ??? == 1 & ! ??? == 2011)
+```
+
+
+Now that we have the required data set for our plot we want to get the divestiture intensities for every year and every group. To do so, the two R functions `group_by()` and `summarize()` will be helpful. We will first group the set `trans` regarding the two variables `Year` and `group` and summarize afterwards to get the divestiture intensity for every year per group and plot it.
+
+info("group_by()") # Run this line (Strg-Enter) to show info
+
+info("summarize()") # Run this line (Strg-Enter) to show info
+
+**Task**: Group the `trans` data set by `group` and `Year` and summarize the mean of `divestitures`, save it in `div` and output it. The code is already provided, simply press `check`.
+
+```{r "3_1___The_Strong_Ful__9"}
+div <- group_by(trans, group, Year)%>%
+  summarize(mean = mean(divestitures))
+
+div
+```
+
+You are probably confused why the `%>%` operator was used and what it does. The so-called pipe operator connects several operations you want to run, so that one is not forced to first assign the `group_by()` function an object and afterwards again assign the `summarize()` function another one. Here `summarize()` just takes the object created by `group_by()` and does its own operation to this table. The outcome is then saved in `div`. It was not necessary to pass the data set to `summarize()` due to the pipe operator `%>%`. (Wickham, 2017)
+
+**Task**: Plot the divestiture intensities contained in `div` using `ggplot()`. You can plot all three groups at once, since we used `group_by()` earlier. Input the data, the aes (x values (`Year`) and y values (`mean`), the x values have to be changed to numeric (using `as.numeric()`) values since they are stored as characters to be easier processable by our regression function `lm()` later), color (the different groups) and draw a line. Set the theme to `theme_bw()`. Change the title to "Divestiture Intensity", the x axis to "Year" and the y axis to "Divestiture Intensity". Rotate the x axis by 45 degrees, put the legend on top and remove the title of the legend. We don't use a data axis but a normal continuous one here, since we only have the years and not complete dates so we don't have to use `scale_x_date`, but `scale_x_continuous`, where we will fill in the argument `breaks` which is a vector of the years contained in the data (in our case 2000 to 2010). Finally, add the shaded region from 2003.5 - 2006.5 (so that the values of 2004, 2005 and 2006 lie within the rectangle).
+
+```{r "3_1___The_Strong_Ful__10",fig.width=9, fig.height=6, dev='svg'}
+# Remove the leading # and replace the question marks:
+#ggplot(data = ???, aes(x = as.????(???), y = ????, color = ????)) +
+#  geom_line() +
+#  theme_bw() +
+#  labs(title = "???", x = "???", y = "????") +
+#  theme(axis.text.x = element_text(angle = ??, hjust = 1), legend.position = "top", legend.title = element_blank()) +
+#  scale_x_continuous(breaks = c(????:????))+
+#  annotate("rect", xmin = ????, xmax = ????, ymin = 0, ymax = 0.07, alpha = .2, fill = "red")
+```
+
+*Figure 3.1:* Raw Divestiture Intensities from 2000 to 2010. Replication of Figure 2 - Transaction Intensities, Panel A from "Wall Street and the Housing Bubble" (p. 2812).
+
+
+***What is this plot telling us?***
+
+According to Figure 3.1, the divestiture intensities of securitization agents were lower than those of the equity analysts from 2000 - 2006 and higher afterwards. Compared to the lawyers, the intensities were higher from 2000 - 2004, lower in 2005 and again higher after 2006. 
+
+***Can those findings imply awareness?***
+
+If the informed agents were aware, we would have expected their divestiture intensities to be way higher than those of their controls and higher compared to the other years from 2004 to 2006. This is obviously not the case since the divestiture intensity of securitization agents reached its all-time low in 2005. But it could be that the difference is due to factors different from being member of one of those groups. To rule out that other factors are responsible for that outcome we will have to run a regression controlling for those factors.
+
+### 3.1.3 Regression analysis
+
+We will run a regression using the following linear model:
+  
+$$\textrm{E[Divestitures}_{i,t}|\textrm{HO}_{i,t-1} = 1] = \alpha_t+\beta_t \times Securitization_i + \sum_{j=1}^7\delta_j Age_j(i,t)+ \lambda MultiHO_{i,t-1}\ .$$
+
++ $Securitization_i$:   An indicator of membership to the group of informed agents.
++ $\beta_t$:            The effect of being part of the securitization group.
++ $Age_j$:              An age indicator for the age category.
++ $\delta_j$:           The effects of being member of age category j.
++ $MultiHO_{i,t-1}$:    An indicator of multi homeownership one year before the observation period.
++ $\lambda$:            The effect of being a multi homeowner.
++ $HO_{i,t-1} = 1$:     The requirement that only those eligible for divestitures are considered.
+
+(Cheng et al, 2014)
+
+Before we do those regressions, you might have a look at the infobox below. It provides basic knowledge about multiple linear regressions and ordinary least squares.
+
+info("Multiple Linear Regression using OLS") # Run this line (Strg-Enter) to show info
+
+Since we already loaded the data set containing the transactions and filtered so that only homeowners are in the set, we can skip this part and continue with additional data manipulation. For the first regression, we need only the securitization agents and the equity analysts where an age category is available.
+
+**Task**: Use `filter()` to subset the data frame `trans` and store it in `dta` so that only securitization agents and equity analysts are included whose `age_cat` is available (meaning not equal to "NA").
+
+```{r "3_1___The_Strong_Ful__11"}
+# Enter your code below:
+# dta <- filter(????, ???? %in% c("Securitization","Equity Analysts"), ???? != "NA"
+```
+
+info("lm()") # Run this line (Strg-Enter) to show info
+
+Now we will run the first regression. We won't apply the whole formula stated above immediately, but rather start by simply regressing the variable `divestitures` against `group`. Additionally, we will take the years into account. This is because it is not very helpful to take all years together, since we would like to take a closer look at the boom period from 2004 to 2006.
+
+If we need the effect in a given year, in our case the effect of membership to a group in a given year, we have to use `Year:group`. Since we additionally want to control for the years, we also have to add `+ Year` as a control. The years, age category and the groups are stored as `character` in the data set I created which is necessary, since we don't have "normal" input values like in other regressions where we have something like population numbers as input and GDP as output. We have so called categorical variables like group membership, an age category or multi homeownership which has to be somehow encoded to make it usable in R. This is done by converting the variable type to a factor. When a variable is stored as character, the `lm()` function automatically converts them to a factor when running the regression, allowing us to forgo the step of converting them to a factor. (See: https://www.rdocumentation.org/packages/stats/versions/3.4.1/topics/formula)
+
+**Task**: Run the regression of `divestitures` against `Year:group` including `Year` as a control using `lm()` and store it in `r1`. Use the object `dta` to do so.
+
+```{r "3_1___The_Strong_Ful__13"}
+# Enter your command below:
+```
+
+
+You might be familiar with some functions like `summary()` to output regression results, but different from a lot of those functions the function `stargazer()` enables us to extract the coefficients and statistics, which are of interest for us. Furthermore, it is possible to add information about controls.
+
+info("stargazer()") # Run this line (Strg-Enter) to show info
+
+**Task**: Load the library `stargazer` and use the function `stargazer()` to output the regression results of `r1`. Ignore `keep` and `report`, only input the regression and set the `type` to "html". Your computer may need a moment to process the command.
+
+```{r "3_1___The_Strong_Ful__15",results='asis'}
+# Enter your code below
+```
+
+*Table 3.1*: Regression adjusted differences of Divestiture Intensities of securitization agents and lawyers (without controls). Based on Table 4 - Divesting Houses of "Wall Street and the Housing Bubble" (p. 2814).
+
+
+As you can see, this command produces Table 3.1, which is quite large and shows entries for the effects of the years, information we are not interested in. We can use keep to include only those entries that are of particular interest and add the information that year effects are applied using `add.lines()`.
+
+**Task**: Output `r1` using stargazer so that only the cross of `year` and `group` are reported (use `group` as input for the `keep` vector). Add the information that year effects were applied.
+
+```{r "3_1___The_Strong_Ful__16",results='asis'}
+# Remove the leading # and replace the question marks below
+# stargazer(????, type = "html", keep = c("????"), add.lines = list(c("Year Effects?", "Yes")))
+```
+
+*Table 3.2*: Regression adjusted differences of Divestiture Intensities of securitization agents and lawyers (without controls). Differs in such way that the output is limited to the effects we are interested in. Based on Table 4 - Divesting Houses of "Wall Street and the Housing Bubble" (p. 2814).
+
+
+The terms of interest in Table 3.2 are those entries named Year(20XX):groupSecuritization, the $\beta_t$. They shows that the securitization agents had lower divestiture intensities than the equity analysts from 2000 to 2006 and higher ones afterwards. That means that we cannot derive evidence that the securitization agents showed awareness of the bubble from that regression. There might be other factors that could influence the outcome of the regression.
+
+**What could those other factors be?**
+
+To identify the other factors which might influence the regression outcome, let's take a look at the `trans` data set once again. To do so we will use the function `sample_n()` which is described below.
+
+info("sample_n()") # Run this line (Strg-Enter) to show info
+**Task**: Use `sample_n()` to select and show ten random rows from `trans`.
+
+```{r "3_1___The_Strong_Ful__18"}
+# Enter your command below:
+```
+
+
+#! addon__quiz__regression variables
+
+
+***Why should the age distribution and the multi homeownership be considered in our analysis at all?***
+
+First, people of different age show different patterns in risk aversion, older people tend to be more risk averse than younger ones (Albert and Duffy, 2012). Second, as stated by Cheng et al. (2014), there could be life cycle and career selection risk. To control for those possible effects, it is necessary to take the age into our regression. Being a multi homeowner could influence divestiture behavior in such way, that a person who owns more than one home might be more likely to sell one of those homes, while a person owning only one home might not be so fast in selling it since it most probably is the house she is living in rather than a speculative object. Additionally, transaction costs are lower for selling a second home than selling the home the person is living in, since the person would have to move and find another place to live (p. 2803).
+
+If we fail to include all the relevant independent variables, our analysis is biased, an effect called omitted variable bias occurs (Stock and Watson, 2007).
+
+This exercise refers to the pages 2802, 2803, 2808 - 2816 of "Wall Street and the Housing Bubble".
+
+## Exercise 3.2 - Omitted Variable Bias
+
+### What is omitted variable bias and when does it occur?
+
+Excluding a variable from the regression leads to an omitted variable bias if the excluded variable fulfills two conditions. As mentioned by Stock and Watson (2007), the variable must
+
+- correlate with the already included independent variable and
+
+- have an effect on the dependent variable.
+
+Leaving a relevant variable out violates the in the infobox `Multiple Linear Regression using OLS` (in exercise 3.1.3) postulated assumption A1 (no relevant variable is left out of the regression). Thus, the estimator that OLS yields is biased.
+
+### How can we explain the existence of omitted variable bias mathematically?
+
+If we assume that we have a linear regression model with one independent variable $X_1$, which follows the formula:
+
+$$(1)  \qquad y_i = \beta_0^*+\beta_1^* \times X_{1,i} + u_i^* \qquad \textrm{leading to the estimated regression formula} \qquad \hat y_i = \hat \beta_0^* + \hat \beta_1^* \times X_{1,i} + \hat u_i^*\ ,$$
+
+where $\hat\beta_1^*$ is estimated as follows:
+
+$$(2) \qquad \hat \beta_1^* = \frac {cov(X_1,\hat y)} {var(X_1)} = \frac {cov(X_1, \hat \beta_0^* + \hat \beta^*_1 X_1 + \hat u^*)}{var(X_1)}\ .$$
+
+If the real relationship includes another independent variable $X_2$ and not only $X_1$, the regression formula from $(1)$ changes to $(3)$:
+
+$$(3) \qquad y_i = \beta_0+\beta_1 \times X_{1,i} + \beta_2 \times X_{2,i}+ u_i \qquad \textrm{leading to the estimated regression formula} \qquad \hat y_i = \hat \beta_0 + \hat \beta_1 \times X_{1,i} +\hat \beta_2 \times X_{2,i} + \hat u_i\ .$$
+
+If we calculate $\hat \beta_1^*$ like in formula $(2)$ even though we would have to calculate $\beta_1$, that fits formula $(3)$, we end up with:
+
+$$(4) \qquad \hat \beta_1^* = \frac {cov(X_1,\hat \beta_0 + \hat \beta_1 \times X_{1} + \hat \beta_2 \times X_{2}+ \hat u)} {var(X_1)}\ .$$
+
+After performing some arithmetical operations, we end up with:
+
+$$(5) \qquad \hat \beta_1^* = \beta_1 + \beta_2 \frac{cov(X_1,X_2)}{var(X_1)}\ .$$
+
+Meaning that our estimate for $\beta_1$, $\hat \beta_1^*$ is biased by $b_2 \frac{cov(X_1,X_2)}{var(X_1)}$ due to omitting the variable $X_2$.
+
+Taking a closer look also explains why variables must be correlated ($cov(X_1,X_2)\neq0$) and a determinant of y ($\beta_2\neq0$). If one of those conditions is violated, no omitting variable bias occurs since the part of $(4)$ responsible for the bias would be $0$.
+
+Von Auer (2016) and Williams (2015).
+
+### Calculation of the omitted variable bias for multi homeownership in 2006
+
+To start, we have to load the data set `personyear_trans_panel.dta`. Then we will and extract all transaction information from securitization agents and equity analysts that were homeowners in 2006 where an age category is available. Note that the year 2006 was selected randomly, every other year would serve as well to emphasize the effect of omitted variable bias.
+
+**Task**: Load `personyear_trans_panel.dta` and store it in `trans`. Then extract the transaction information of securitization agents and equity analysts having age information for 2006 from `trans` where `homeowner` is equal to one and store it in `ovb`.
+
+```{r "3_2___Omitted_Variab"}
+# Enter your code below:
+```
+
+To calculate the estimated omitted variable bias, we need the regression without the relevant variable $X_2$, the regression including the relevant variable $X_2$, $Var(X_1)$, and $Cov(X_1, X_2)$.
+
+In order to be able to compute those statistics, a dummy variable for the group was introduced while changing the dataset `personyear_transaction_panel.dta`. This is necessary because R fails to compute $Var(X_1)$ and $Cov(X_1, X_2)$ otherwise because $X_1$ is the membership to the group which is stored as character, the R data class that stores string values.
+
+info("dummy variable") # Run this line (Strg-Enter) to show info
+
+**Task**: Run two regressions, both of divestitures against group, don't control for `multi_homeownership` in `reg1`, control for it in `reg2`. Both regressions use the data set `ovb`. Compute the variance of `groupd` (the group dummy variable) and the covariance of `groupd` and `multi homeowner` and output both regressions using stargazer. Press `check` to do so.
+
+```{r "3_2___Omitted_Variab__2",html.data.frame=FALSE, results='asis'}
+reg1 <- lm(divestitures ~ group, data = ovb)
+
+reg2 <- lm(divestitures ~ group + multi_homeowner, data = ovb)
+
+var(ovb$groupd)
+
+cov(ovb$groupd, ovb$multi_homeowner)
+
+stargazer(reg1, reg2, type = "html")
+```
+
+*Table 3.3*: Regression adjusted difference in divestitures in 2006, one omitting multi_homeownership (column one), one including multi_homeownership as a control (own illustration).
+
+The estimated omitted variable bias is equal to $\hat\beta_2 \frac{cov(X_1,X_2)}{var(X_1)}$. Estimated since we are neither able to use the real $\beta_2$, nor the real $cov(X_1,X_2)$ and $var(X_1)$ (we only have the sample variance, not the variance of the population) so we have to use their estimates and sample variance respectively. Use the information above and the chunk below (where you can perform your calculations) to calculate the estimated bias. You may skip this part if you are not willing to do it.
+
+```{r "3_2___Omitted_Variab__3",optional=TRUE}
+# Enter your command below
+
+```
+
+#! addon__quiz__Omitted Variable Bias
+
+
+info("Calculation of the Omitted Variable Bias") # Run this line (Strg-Enter) to show info
+
+Excluding multi home ownership would lead to an estimated bias of -0.006 while the real value is -0.005. So the negative effect of the membership to the group is reduced if we take multi homeownership in account.
+
+<img src="C:/Users/Marius/OneDrive/Bachelorarbeit/WallStreet/Final/ovb.png" height="160px" width="800px" max-width="100% fig.align = "center" />
+
+*Figure 3.2*: Own illustration of the effect of including `multi_homeownership` to the regression.
+
+As you can derive from the regression output and as you see in Figure 3.2, including multi homeownership reduces the direct negative effect (which used to be -0.011, see at the left of Figure 3.2) because the membership to the securitization group is negatively correlated with multi homeownership. Multi homeownership has a positive effect on divestitures and therefore being a securitization agent has a negative indirect effect on divestitures through multi homeownership.
+
+### Regression Including Multi Homeownership
+
+Now let's run two regressions, one where we control for `multi_homeowner`, the other where we don't. To do so we must first construct the same data set as in exercise 3.1.3 (the one saved in `dta`).
+
+**Task**: Extract the entries from `trans` that are from securitization agents or equity analysts, ensure that only the years of 2000 to 2010 are included, that the persons were homeowners and that an age category exist. Store it in the object `dta`. Simply press `check` to do so.
+
+```{r "3_2___Omitted_Variab__4"}
+dta <- filter(trans, group %in% c("Securitization", "Equity Analysts") & Year != 2011 & homeowner == 1 & age_cat != "NA")
+```
+
+**Task**: Do the regressions `r1` where you don't control for `multi_homeowner` (like we did earlier) and `r2` where you control for `multi_homeowner` using `dta`. Output `r1` and `r2` with `stargazer()` so that only the effect of `multi_homeownership` and the cross of `Year` and `group` are reported. Add the information that year effects (ensure that you write "Year Effects") were applied.
+
+```{r "3_2___Omitted_Variab__5",results='asis'}
+# Remove the leading '#' and replace the question marks below:
+# r1 <- lm(??? ~ ???:??? + ???, data = dta)
+# r2 <- lm(??? ~ ???:??? + ??? + ???, data = dta)
+# Remove the leading '#' and replace the question marks below to output the regressions:
+# stargazer(??, ??, type = "html", keep = c("group", "multi_homeowner"), add.lines = list(c("???", "???", "???")))
+```
+
+*Table 3.4*: Regression adjusted differences of Divestiture Intensities of securitization agents and lawyers (the first column without controls, the second controlling for multi homeownership). Based on Table 4 - Divesting Houses of "Wall Street and the Housing Bubble" (p. 2814).
+
+
+In Table 3.4 you can see what changed by including multi_homeownership as a control in our regression. The outcome of this regression is slightly different from the one we did without controlling for multi_homeownership.
+
+$\lambda$ - the effect of multi_homeownership - is significantly positive (at the 1% level), which indicates that people are more likely to divest if they are multi homeowners, which is consistent with what we expected earlier.
+
+$\beta_t$ increased for every year, meaning that we overestimated the negative effect of being a member of the securitization group. The intensities are still not significantly larger, between 2004 and 2006 they are even smaller for the securitization group compared to the equity analysts group.
+
+### The Age Distribution
+
+Let's turn towards the second control in the regression, the age distribution of the three groups. As stated earlier, to be a factor in the analysis, the age distribution must have a reasonable effect on the divestiture behavior and has to be correlated with the independent variable, the membership to the securitization group. As mentioned earlier, different age patterns lead to differences regarding risk aversion and the different groups might face different life cycles and career risk. Before running the regression, we will look on the age distributions of the groups.
+
+**Task**: Visualize the age distributions of the three groups using the variable `age_cat` from the person data with `ggplot()`. We will visualize the distribution in a histogram rather than in a line diagram. Since the code is already provided, you can simply press `check` to run it.
+
+```{r "3_2___Omitted_Variab__6",fig.width=9, fig.height=6, dev='svg'}
+# First of all we have to load the dataset person_included.dta which was already manipulated so that it contains only the 400 people per group that were not excluded due to the sampling rules stated in Exercise 2, since this data allows us to observe the age distribution of our sample doing less data manipulation
+person <- read.dta("person_included.dta")
+# Now we have to filter so that only people with an available age category are in the resulting dataset
+per <- filter(person, age_cat != "NA")
+# After that step we will compute the relative distribution of age_cat for every group. We take the object per, group() it by age_cat and group, summarize() it by age_cat and group, group() it by again by group and create a new column that computes share/sum(share) (the relative quantities) for every age category per group.
+distribution <- per %>%
+  group_by(age_cat, group) %>%
+  summarize(share = n()) %>%
+  group_by(group)%>%
+  mutate(share = round(share/sum(share)*100,2))
+# And we finally plot it with a header, axis titles and the legend on top
+ggplot(data = distribution, aes(x = age_cat, y = share, fill = group)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Age Distribution", x = "Age Category", y = "Relative Frequency in %") +
+  theme_bw() +
+  theme(legend.position = "top", legend.title = element_blank())
+```
+
+*Figure 3.3:* Illustration of the age distribution of the three groups. The illustration is based on Table 1 - People, Panel B from "Wall Street and the Housing Bubble" (p. 2806).
+
+As you can see in Figure 3.3, even though being quite similar distributed, there are a lot of differences between the different groups when it comes to age distribution. While the securitization agents tend to be the youngest group on average, the lawyers tent to be the oldest and the equity analysts the middle group.
+
+Now we will apply the whole formula stated above and regress `divestitures` against `group` controlling for `multi_homeowner` and `age_cat` including `Year` effects.
+
+info("t-statistic") # Run this line (Strg-Enter) to show info
+
+**Task**: Run the regression `r3` (using `dta`), where you control for both `age_cat` and `multi_homeowner`. Output `r2` and `r3` afterwards using `stargazer()`. Add the information that year effects and age indicators were applied and report the `t-statistics`. Simply press `check` to do so.
+
+```{r "3_2___Omitted_Variab__7",results='asis'}
+r3 <- lm(divestitures ~ Year:group + Year + age_cat + multi_homeowner, data = dta)
+
+stargazer(r2, r3, type = "html", keep = c("group","multi_homeowner"), add.lines = list(c("Year Effects?", "Yes", "Yes"), c("Age Indicators?", "No", "Yes")), report = "vct*")
+```
+
+*Table 3.5*: The regression adjusted differences between securitization agents and equity analysts in divestiture intensity controlling for multi homeownership only (column one) and both multi homeownership and age category (column two). Based on Table 4 - Divesting Houses of "Wall Street and the Housing Bubble" (p. 2814).
+
+Table 3.5 makes it evident that including age category had minor influences on the $\beta_t$ (recall, $\beta_t$ was the effect of being a member to the securitization group in year t) in each year. We still observe only one significantly positive effect (at the 10% level) in 2005.
+
+### Divestiture intensities of Securitization Agents and Lawyers
+
+Until now, our analysis was limited to the regression adjusted differences between securitization agents and equity analysts. However, remember we also have a second control group, the lawyers, so we have to repeat the regression for the securitization agents and the lawyers as well.
+
+We start by filtering the `trans` data set in such way that only entries of securitization agents and lawyers with information about an age category from 2000 to 2010 are included in the data set.
+
+**Task**: Press `check` to create a data set from `trans` including only securitization agents and lawyers with an age category where the `year` is between 2000 and 2010 and that are homeowners. It will be stored it in `dta2`.
+
+```{r "3_2___Omitted_Variab__8"}
+dta2 <- filter(trans, group %in% c("Securitization", "Lawyers") & age_cat != "NA" & Year %in% c(2000:2010) & homeowner == 1)
+```
+
+After filtering we can easily regress using the same formula like in `r3`, changing only the underlying data from `dta` to `dta2`.
+
+**Task**: Do the regression for the securitization agents against the lawyers. Control for both `age_cat` and multihomeowner and use `dta2` as data input.
+
+```{r "3_2___Omitted_Variab__9"}
+# Enter your code below:
+
+```
+
+
+**Task**: Output the two regressions `r4` and `r5` side by side using stargazer. Show only the entries for, `Year:group` and `multi_homeowner` in the table. Report the t-statistics and add the information that year effects are considered. Name the columns of the regression output Equity Analysts and Lawyers. Simply press `check`, the code is already provided.
+
+```{r "3_2___Omitted_Variab__10",results='asis'}
+stargazer(r3, r4, type = "html", keep = c("group", "multi_homeowner"), report = "vct*", column.labels = c("Equity Analysis","Lawyers"), add.lines = list("Year Effects", "Yes", "Yes"))
+```
+
+*Table 3.6*: The regression adjusted differences between securitization agents and equity analysts (lawyers) in divestiture intensity controlling for age category and multi homeownership. Based on Table 4 - Divesting Houses of "Wall Street and the Housing Bubble" (p. 2814).
+
+While we kept the outcome of the regression concerning securitization agents and equity analysts in column one of Table 3.6, column two represents the regression of securitization agents and lawyers. In column two we can observe that there is no significantly positive difference if we compare securitization agents to lawyers from 2004 to 2006. It is even significantly lower (at the 5% level) in 2005. This leads to the conclusion that the informed agents were rather not aware of the bubble or at least didn't react by divesting real estate.
+
+This table seems to be exactly like Table 4 - Divesting Houses from the paper I am referring to. Yet, if you take a closer look, the t-statistic and the significance levels differ from the ones reported in the paper. This is due to differences in the standard errors as mentioned in the infobox above. This issue will be handled in the next exercise.
+
+This exercise refers to the pages 2806, 2808 - 2816 of "Wall Street and the Housing Bubble".
+
+## Exercise 3.3 - Cluster Robust Standard Errors
+
+### Cluster Robust Standard Errors
+
+In `Multiple Linear Regressions Using OLS` (exercise 3.1.3), we postulated several assumptions. We dealt already with a violation of assumption `A1`, but what if assumption B2 (the error terms are normally distributed with $\mu$, $\sigma^2$) is violated in such way that the variance $\sigma^2$ is not constant, but also relies on the independent variables $X$? In that case, we speak of so called heteroscedasticity (Von Auer, 2016). If assumption B3 is violated so that $cov(e_i, e_j) \neq 0$, autocorrelation exists (Von Auer, 2016).
+
+According to Zeileis (2008) economic data has the characteristic to show at least some autocorrelation and heteroscedasticity. He states that, if the form of heteroscedasticity is unknown, the OLS estimator still yields useful outcome. But the calculation of standard errors has to be changed to obtain heteroscedastic robust outcomes. If autocorrelation exists, it additionally makes sense to use clustered standard errors (Stock and Watson, 2007). In our case, it seems plausible that autocorrelation exists, since we observe behavior from the same persons in different years.
+
+To do so, heteroscedasticity consistent (HC) covariance matrix estimations have been designed. (Zeileis, 2008)
+
+Recall, in Exercise 3.1 we stated that the standard error of the OLS regression is:
+
+$$ \widehat{Var}(\hat{\beta}) = \hat{\sigma}^2 (X'X)^{-1} \qquad \textrm{where} \qquad \hat{\sigma}^2 = \frac{1}{(N-k-1)}\sum_{i=1}^N{\hat u_i^2}\ .$$
+
+Stata's way to compute heteroscedasticity robust standard errors is to scale the variance matrix with $\frac{n}{n-k-1}$. Additionally they use the calculated residuals $\hat u_i$ meaning that they us HC1 robust standard errors. (Zeileis, 2004, p. 4 and Stata Manual regress, p. 3)
+
+This leads to the variance being computed as follows:
+
+$$ \widehat{Var}(\hat{\beta}) = (\textrm{X'X})^{-1} * \bigg[ \sum_{i=1}^N(\hat u_i * x_i)' * (\hat u_i * x_i) \bigg] *(\textrm{X'X})^{-1}\ .$$
+
+If there is intra group correlation, meaning that we got several uncorrelated groups, whose values are correlated (in our case, one group would be a person defined by the corresponding keyident), a cluster robust variance matrix is computed:
+
+$$ \widehat{Var}(\hat{\beta}) = (\textrm{X'X})^{-1} * \bigg[ \sum_{j=1}^{n_c}v_j' * v_j \bigg] *(\text{X'X})^{-1} \qquad \textrm{where} \qquad v_j = \sum_{j_{cluster}}\hat u_i * x_i\ .$$
+
+See Sribney (StataCorp)
+
+This can be done in R using the `felm()` function from the `lfe` package. With `felm()` it is possible to specify a cluster which leads to the same outcome like in Stata. (Gaure , 2016)
+
+info("felm()") # Run this line (Strg-Enter) to show info
+
+Before we start with the regressions using clustered robust standard errors, we have to load and modify the dataset again like in the exercise before.
+
+**Task**: Press `check` to load `personyear_trans_panel.dta` and store it in `trans`. This chunk will construct the two data sets `dta` and `dta2` from `trans`, which are identical to the ones we used one exercise earlier.
+
+```{r "3_3___Cluster_Robust__2"}
+trans <- read.dta("personyear_trans_panel.dta")
+dta <- filter(trans, Year %in% c(2000:2010) & group %in% c("Securitization","Equity Analysts") & age_cat != "NA", homeowner == 1)
+dta2 <- filter(trans, Year %in% c(2000:2010) & group %in% c("Securitization","Lawyers") & age_cat != "NA", homeowner == 1)
+```
+
+Now that we have our two data sets we can continue with performing the regressions with clustered standard errors using `felm()`.
+
+**Task**: Load `lfe` and use `felm()` to do a regression with person clustered standard errors. Run one regression for the securitization agents and the equity analysts and one for the securitization agents and the lawyers, using the data sets `dta` and `dta2` and the formulas from Exercise 3.2. Save them in `r3` and `r4`.
+
+```{r "3_3___Cluster_Robust__3"}
+# Delete the leading '#' and repace the question marks:
+#library(???)
+#r3 <- felm(????? | 0 | 0 | keyident, data = ???)
+#r4 <- felm(????? | 0 | 0 | keyident, data = ???)
+```
+
+
+**Task**: Press `check`to output `r3` and `r4` using `stargazer()`.
+
+```{r "3_3___Cluster_Robust__4",results='asis'}
+stargazer(r3, r4, type = "html", keep = c("group", "multi_homeowner"), report = "vct*", column.labels = c("Equity Analysts", "Lawyers"), add.lines = list(c("Year Effects?", "Yes", "Yes"), c("Age Indicators?", "Yes", "Yes")))
+```
+
+*Table 3.7*: Regression adjusted difference in Divestiture Intensities of the securitization agents and the equity analysts (column one) and lawyers (column two) respectively. Replicated Table 4 - Divesting Houses of "Wall Street and the Housing Bubble" (p. 2814).
+
+***Findings***
+
+Table 3.7 replicates the regression adjusted differences from Table 4 of "Wall Street and the Housing Bubble" with the correct t-statistics reported below the estimates. We still observe insignificant lower divestiture intensities for the informed agents compared to the equity analysts and two insignificant higher and one lower intensity (significant at the 10% level) compared to the lawyers during boom. We can conclude that the agents didn't divest significantly more, but rather divested insignificantly less than the equity analysts group. Compared to the lawyers group, they divested insignificantly more in 2004 and 2006 and significantly less (at the 10% level) in 2005.
+
+### Confidence Intervals of Regression Adjusted Divestiture Intensities
+
+Now, that we replicated the outcomes of the regression adjusted divestiture intensities, we will look at confidence intervals. This is an approach to visualize significance. To learn more about confidence intervals take a look at the corresponding infobox below.
+
+info("confidence intervals") # Run this line (Strg-Enter) to show info
+
+To be able to plot the estimates alongside their confidence intervals, we must use `tidy()` to create a tidy regression output that is usable with `ggplot()`.
+
+info("tidy()") # Run this line (Strg-Enter) to show info
+
+**Task**: Load `broom` and use `tidy()` on `r3` to create tidy regression output with confidence intervals, for further use with `ggplot()`. Store the output in `td`. Since we only want to print the confidence intervals and the estimates for the difference between the groups for the given years, we only need the entries from row 19 to 29. Output the first rows of `td` afterwards.
+
+```{r "3_3___Cluster_Robust__7"}
+# Enter your code below
+```
+
+
+As you can see, `td` contains seven variables. The term, estimate, standard error, t-statistic, p-value, the left bound of the confidence interval and the right bound of the confidence interval. Of interest for our visualization is the estimate and the bounds of the confidence interval. Before plotting those figures, we will substitute the `term` column with the years from 2000 to 2010 to have a clearer plot later.
+
+**Task**: Substitute the `term` column of `td` with a vector from 2000 to 2010. Press `check` since the code is provided.
+
+```{r "3_3___Cluster_Robust__8"}
+td$term <- c(2000:2010)
+```
+
+**Task**: Plot the estimates for the effect of being member of the securitization agents group with their corresponding confidence intervals. Press `check` to use `ggplot()` on `td` and add points with `geom_point()`.
+
+```{r "3_3___Cluster_Robust__9",fig.width=9, fig.height=6, dev='svg'}
+ggplot(td,aes(term, estimate)) +
+    geom_point() +
+    theme(legend.title = element_blank()) +
+    geom_hline(yintercept =  0, color = "red") +
+    scale_x_continuous(breaks = c(2000:2010)) +
+    geom_errorbar(aes(ymin = conf.low, ymax = conf.high), alpha = .4, color = "black") +
+    labs(x = "Year", y = "Estimated Difference", title = "Estimated Difference of Divestiture Intensities between Securitization Agents and Equity Analysts") +
+    annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = -0.1, ymax = 0.15, alpha = .2, fill = "red")
+```
+
+*Figure 3.4:* Regression adjusted difference in Divestiture Intensities between securitization agents and equity analysts with their corresponding confidence intervals (on the 5% significance level). Based on Table 4 - Divesting Houses from "Wall Street and the Housing Bubble" (p. 2814).
+
+Figure 3.4 illustrates the estimates alongside with their respective 95% confidence intervals. What does that imply?
+
+As you might already know, the 95% confidence interval means that the probability that the interval covers the real $\beta$ is 95%. We find a significant positive (or negative) effect if the confidence interval lies completely above (or below) the red line (y = 0). In the boom period, this is not the case for any year, leading to the assumption that there is no positive relationship that is significant at the 5% level between divestitures and membership to the securitization group. (Von Auer, 2016)
+
+Now we perform the exact same steps as before for the other regression, we only change the significance level to 10%.
+
+**Task**: Press `check` to use `tidy()` to create a tidy regression output for `r4` and produce the same plot as before with the difference that the significance level is set to 10% (equals 0.9 as input).
+
+```{r "3_3___Cluster_Robust__10",fig.width=9, fig.height=6, dev='svg'}
+# First we create tidy regression output including bounds of the confidence interval 
+td2 <- tidy(r4, conf.int = TRUE, conf.level = 0.9)[19:29,]
+
+# We substitute the first row
+td2$term <- c(2000:2010)
+
+# And plot the confidence intervals
+ggplot(td2,aes(term, estimate)) +
+  geom_point() +
+  theme(legend.title = element_blank()) +
+  geom_hline(yintercept =  0, color = "red") +
+  scale_x_continuous(breaks = c(2000:2010)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), alpha = .4, color = "black") +
+  labs(x = "Year", y = "Estimate Difference", title = "Estimated Difference of Divestiture Intensities between Securitization Agents and Lawyers") +
+  annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = -0.1, ymax = 0.15, alpha = .2, fill = "red")
+```
+
+*Figure 3.5*: Regression adjusted difference in Divestiture Intensities between securitization agents and lawyers with their corresponding confidence intervals (on the 10% significance level). Based on Table 4 - Divesting Houses from "Wall Street and the Housing Bubble" (p. 2814).
+
+As you can see in Figure 3.5, there are significant effects for the years 2005 (negative), 2007 and 2009 (both positive). The advantage of that visualization is clarity and comprehensiveness, but recall, in the table above we were able to observe different significance levels, here we can see only one. As we already know, 2009 is significant at the 5% level, but if we would only look at this visualization, we would not be able to see that (this holds also true for the other way around, if we set the level to 1% for example, we also won't be able to observe the significance of values significant at the 5% level).
+
+
+This exercise refers to the pages 2813 - 2816 of "Wall Street and the Housing Bubble".
+
+## Exercise 4 - The Weak Full Awareness Hypothesis
+
+After rejecting the first, we shift towards the second hypothesis. This is the weak form, assuming awareness which manifests in such way that the agents didn't divest due to their uncertainty concerning the point of time when the bubble will blow up and to transaction costs associated with moving out of one's home. (Cheng et al, 2014) It is assumed that they rather avoided buying additional homes or swapping up during the boom period (2004 - 2006) compared to both the pre-boom period (2000 - 2003) and their control groups. The reason why Cheng et al. (2014) excluded first home purchases is that those purchases are rather made out of necessity than out of logical calculus.
+
+Before we start with our regression, we will take a look on how the Second Home Purchase and Swap Up Intensity developed from 2000 to 2010. The intensity is defined analogously to the divestiture intensity.
+
+### 4.1 Second Home Purchase and Swap Up Intensity
+
+As implied by the Cheng et al. (2014), the formula for the Second Home Purchase and Swap Up Intensity is as follows:
+
+$$\textrm{Second Home Purchases and Swap Up Intensity}_t =\frac {\textrm{Second Home Purchases or Swap Ups}_t} { \textrm{People eligible for Second Home Purchases and Swap Ups}_t}\ .$$
+
+According to this formula, the Second Home Purchase and Swap Up Intensity consists of all second home purchases (buying a new home given that the person already owns one or more homes) and swap ups (swapping to a more expensive home) divided by the people eligible for second home purchases or swap ups, namely all people that currently own a home. Why should this intensity represent a good measurement for weak full awareness?
+
+As discussed earlier, the agents had maximum incentive to avoid losses in their house portfolio since it usually represents a significant share of their wealth. If they were aware that the bubble existed, but didn't think that they are able to ride the bubble, they may have avoided to increase the share of wealth exposed to the housing market so that they don't have additional money at stake.
+
+### 4.2 Second Home Purchase and Swap Up Intensities from 2000 to 2010
+
+We will plot that intensity for every year and every group throughout 2000 to 2010. We will reload the data set `personyear_trans_panel.dta` and perform similar steps as before.
+
+**Task**: Load the data set `personyear_trans_panel.dta` and store it in `trans` by pressing `edit` and `check` afterwards.
+
+```{r "4___The_Weak_Full_Aw"}
+trans <- read.dta("personyear_trans_panel.dta")
+```
+
+**Task**: Construct a data frame that includes only homeowners and the years from 2000 - 2010 and store it in `trans`. Press `check` to do so.
+
+```{r "4___The_Weak_Full_Aw__2"}
+trans <- filter(trans, homeowner == 1 & Year %in% c(2000:2010))
+```
+
+Now there will be a small difference to Exercise 3. In Exercise 3 the variable `divestitures` was the dependent variable we were interested in, but which is the one for second home purchase and swap up intensity. Let's look at the `trans` data set again to identify the variable of interest.
+
+**Task**: Show ten randomly selected rows of `trans` by simply pressing `check`.
+
+```{r "4___The_Weak_Full_Aw__3"}
+sample_n(trans, size = 10)
+```
+
+As stated earlier, it is possible to get a brief description of a variable if you move your mouse over the header of one column. Move over the headers of the trans data set and try to determine the variable we are interested in.
+
+#! addon__quiz__Search Variable
+
+
+**Task**: Construct a table that contains the mean of `houses_bought` contained in `trans` for every group and every year. To do so, use the functions `group_by()` and `summarize()` with the pipe operator `%>%` and save it in `second`:
+
+```{r "4___The_Weak_Full_Aw__4"}
+#second <- group_by(.data, var1, var2) %>%
+#  summarize(mean = ???(???))
+```
+
+
+**Task**: Press `check` to produce a plot based on the data set `second` using `ggplot()`. This will be done similarly to the plot of the divestiture intensities in exercise 3.1
+
+```{r "4___The_Weak_Full_Aw__5",fig.width=9, fig.height=6, dev='svg'}
+ggplot(data = second, aes(x = as.numeric(Year), y = mean, color = group)) +
+  geom_line() +
+  theme_bw() +
+  labs(title = "Second Home Purchase and Swap Up Intensity", x = "Year", y = "Second Home Purchase and Swap Up Intensity") +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1), legend.position = "top", legend.title = element_blank()) +
+  scale_x_continuous(breaks = c(2000:2010)) +
+  annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = 0, ymax = 0.125, alpha = .2, fill = "red")
+```
+
+*Figure 4.1:* Raw Second Home Purchase and Swap Up Intensities for the three groups. Replication of Figure 2 - Transaction Intensities, Panel B from "Wall Street and the Housing Bubble" (p. 2812).
+
+***What do those findings imply?***
+
+If we look at the raw intensities in Figure 4.1, we find that the securitization agents' intensities were higher throughout the whole boom period compared to both controls. Actually, if you remember that the divestiture intensity reached its low in 2005, we find that the second home purchase and swap up intensity reaches it's all time high in exactly the same year. But this graph cannot account for possible different explanatory factors, so we will have to focus on regression adjusted differences which we will in the following paragraph.
+
+### 4.3 Regression analysis
+
+We will run a regression using the following linear model:
+
+$$\textrm{E[BuySecondHomeOrSwapUp}_{i,t}\textrm{|HO}_{i,t-1} = 1] = \alpha_t+\beta_t \times Securitization_i + \sum_{j=1}^7\delta_j Age_j(i,t)+ \lambda MultiHO_{i,t-1}\ .$$
+
++ $Securitization_i$:   An indicator of membership to the group of informed agents.
++ $\beta_t$:            The effect of being part of the securitization group.
++ $Age_j$:              An age indicator for the age category.
++ $\delta_j$:           The effects if being member of age category j.
++ $MultiHO_{i,t-1}$:    An indicator of multi homeownership one year before the observation period.
++ $\lambda$:            The effect of being a multi homeowner.
++ $HO_{i,t-1} = 1$:     The requirement that only those eligible for divestitures are considered.
+
+The term of interest is $\beta_t$, expressing the difference in buying a second home or swapping up regarding membership to the group of informed agents.
+
+**Task**: Construct two data sets from `trans`, one including only the securitization agents and the equity analysts, named `set1` and the other one containing only securitization agents and lawyers, named `set2`. Both sets should contain only rows with persons for which an age category is available.
+
+```{r "4___The_Weak_Full_Aw__6"}
+#set1 <- filter(???, group %in% c("?????", "Equity Analysts"), ??? != "NA")
+#set2 <- filter(???, group %in% c("?????", "Lawyers"), ??? != "NA")
+```
+
+Now that we have got the two data sets for our regression we can do them.
+
+**Task**: Press `check` to regress `houses_bought` against `Year:group` using the controls `Year`, `age_cat` and `multi_homeowner` with both sets using `felm()`.
+
+```{r "4___The_Weak_Full_Aw__7"}
+r1 <- felm(houses_bought ~ Year:group + Year + age_cat + multi_homeowner | 0 | 0 | keyident, data = set1)
+r2 <- felm(houses_bought ~ Year:group + Year + age_cat + multi_homeowner | 0 | 0 | keyident, data = set2)
+```
+
+**Task**: Output the two regressions using `stargazer()`. Report t-statistics and set the `type` to text. Add the formation that we controlled for `age_cat` and `Year`. Press `check`, the code is already provided.
+
+```{r "4___The_Weak_Full_Aw__8",results='asis', align='center'}
+stargazer(r1, r2, type = "html", keep = c("group", "multi_homeowner"), report = "vct*", column.labels = c("Equity Analysts", "Lawyers"), add.lines = list(c("Year Effects?", "Yes", "Yes"), c("Age Indicators?", "Yes", "Yes")))
+```
+
+*Table 4.1*: Regression adjusted difference in Divestiture Intensities of the securitization agents and the equity analysts (column one) and lawyers (column two) respectively. Replicated Table 5 - Buying a Second Home or Swapping Up of "Wall Street and the Housing Bubble" (p. 2815).
+
+***Findings***
+
+In contrast to the expectation that the agents divested more, we observe in Table 4.1 that $\beta_t$ is lower for both control groups between 2004 and 2006, but only significantly for the difference between equity analysts and securitization agents in 2005 (at the 1%-level). This leads to the conclusion that, instead of decreasing the amount at stake in the real estate market, securitization agents were rather buying and swapping-up. This is consistent with the findings we had in Exercise 3. Before we continue with hypothesis three let's look at the confidence intervals of that regression once again.
+
+#! addon__quiz__Confidence Intervals
+
+
+**Task**: Plot the estimates and confidence intervals of `r1`. Create a tidy regression output using `tidy()`, extract the rows from 19 to 29, rename the first column with the years 2000 - 2010 and plot the estimates and the confidence intervals. Simply press `check` to do so.
+
+```{r "4___The_Weak_Full_Aw__9",fig.width=9, fig.height=6, dev='svg'}
+td <- tidy(r1, conf.int = TRUE)[19:29,]
+
+td$term <- c(2000:2010)
+
+ggplot(td,aes(term, estimate)) +
+  geom_point() +
+  theme(legend.title = element_blank()) +
+  geom_hline(yintercept =  0, color = "red") +
+  scale_x_continuous(breaks = c(2000:2010)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), alpha = .4, color = "black") +
+  labs(x = "Year", y = "Estimate Difference", title = "Estimated Difference of Second Home Purchase and Swap Up Intensities between Securitization 
+Agents and Equity Analysts") +
+  annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = -0.1, ymax = 0.15, alpha = .2, fill = "red")
+```
+
+*Figure 4.2:* Regression adjusted difference in Second Home Purchase and Swap Up Intensities between securitization agents and equity analysts with their corresponding confidence intervals (on the 5% significance level). Based on Table 5 - Buying a Second Home or Swapping Up from "Wall Street and the Housing Bubble" (p. 2815).
+
+As already mentioned in the quiz above, we can observe in Figure 4.2 that two estimates are significant at the 5% significance level at least. Still, from our table we know that they are even significant at the 1% level.
+
+**Task:** Plot the confidence intervals for the regression with the control group lawyers. Create a tidy regression output using `tidy()` on `r2`. Then extract the rows from 19 to 29, rename the first column with the years 2000 - 2010 and plot the estimates and the confidence intervals. Press `check` to do so.
+
+```{r "4___The_Weak_Full_Aw__10",fig.width=9, fig.height=6, dev='svg'}
+td2 <- tidy(r2, conf.int = TRUE)[19:29,]
+
+td2$term <- c(2000:2010)
+
+ggplot(td2,aes(term, estimate)) +
+  geom_point() + 
+  theme(legend.title = element_blank()) + 
+  geom_hline(yintercept =  0, color = "red") +
+  scale_x_continuous(breaks = c(2000:2010)) +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), alpha = .4, color = "black") +
+  labs(x = "Year", y = "Estimate Difference", title = "Estimated Difference of Second Home Purchase and Swap Up Intensity between Securitization 
+Agents and Lawyers") +
+  annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = -0.1, ymax = 0.15, alpha = .2, fill = "red")
+```
+
+*Figure 4.3:* Regression adjusted difference in Second Home Purchase and Swap Up Intensities between securitization agents and lawyers with their corresponding confidence intervals (on the 5% significance level). Based on Table 5 - Buying a Second Home or Swapping Up from "Wall Street and the Housing Bubble" (p. 2815).
+
+Figure 4.3 yields the exact same results like the table above, since the only significance level that we observe in both illustrations is the 5% significance level for 2002. In this special case, the table doesn't give us a lot more information.
+
+This exercise refers to the pages 2802, 2812 - 2816 of "Wall Street and the Housing Bubble".
+
+## Exercise 5 - Performance
+
+After testing and rejecting the first two hypotheses, let's focus on the third one. We will try to answer the question if the portfolios of the informed agents performed better on average, by comparing portfolios, constructed in accordance with some assumptions stated below. Sales and purchase information, the timing of sales and purchases and the location of the properties will be used to determine the value of the properties and constructed portfolios every year.
+
+**Cheng et al. (2014) made several assumptions to construct the individual portfolios:**
+
++ 1) Self-financing strategy. No new money input, no money output.
+
++ 2) There are only two asset classes, homes and cash (cash as a risk-free asset).
+
++ 3) Time flows quarterly.
+
++ 4) Every quarter, the value of the homes is reevaluated, based on the zip-code which, in combination with the Case-Shiller data (if available, otherwise the Case-Shiller county-level, FHFA CBSA or national home price index in exactly that order), determines the value of every single property.
+
++ 5) We assume that every person has an initial supply of homes, given by the number of homes in 2000:I.
+
++ 6) Every person has enough cash in 2000:I to make all future purchases.
+
+The whole data set, which can be created using these assumptions, already exists, and is provided Cheng et al. (2014). It can be downloaded following the link in Exercise 0 of this problem set.
+
+We will include the two different strategies analyzed by Cheng et al. (2014) in our analysis. First, the strategy our groups followed in reality by doing their transactions and second, the buy-and-hold strategy. The buy-and-hold strategy is the strategy where the initial supply of homes and cash is held from 2000:I and 2010:IV. Based on that, we will look at regression adjusted differences between the total return and the buy-and-hold return (this difference will be called "performance index) and regression adjusted differences in total return for the time between 2006:IV and 2010:IV.
+
+### 5.1 Performance indices and accumulated return
+
+Let's look at the performance indices of our three groups. As implied by the authors on page 2822, the performance indices for each person $i$ at time $t$ are calculated as:
+
+$$\textrm{Performance Index}_{i,t} = \frac {\textrm{totalvalue}_{i,t}-\textrm{totalvalue}_{i,t_0}} {\textrm{totalvalue}_{i,t_0}} - \frac {\textrm{totalvalue_buyhold}_{i,t}-\textrm{totalvalue_buyhold}_{i,t_0}} {\textrm{totalvalue_buyhold}_{i,t_0}}\ .$$
+
+Verbally, the individual performance index is the accumulated difference of the return between the trading and the buy and hold strategy. This formula can be simplified using the property that in 2000:I ($\textrm{totalvalue}_{i,to} = \textrm{totalvalue_buyhold}_{i,t_0} \forall i$, this holds because the initial portfolio value is simply the initial value of the buy and hold portfolio, since no transactions are made yet in $t_0$):
+
+$$\textrm{Performance Index}_{i,t} =\frac {\textrm{totalvalue}_{i,t} -  \textrm{totalvalue_buyhold}_{i,t}} {\textrm{totalvalue}_{i,t_0}} \ .$$
+
+As mentioned by Cheng at al. (2014) on page 2822 of the paper, the weighted cumulative performance index (for all individuals together) is the sum of all individual performance indices at time t weighted by the initial portfolio values, or mathematically, the weighted arithmetic mean of the individual performance indices:
+
+$$\textrm{Performanceindex}_t =\frac {\sum_{i}{\textrm{(w}_{i}  \times  \textrm{Performanceindex}_{i,t})}} {\sum_{i}{\textrm{w}_{i}}}, \quad w_i = \textrm{totalvalue}_{i,t_0} \ .$$
+
+(Dodge, 2008)
+
+The second indicator we are interested in is calculated as the weighted arithmetic mean of the cumulative returns of each individual (from 2006:IV on):
+
+$$ \textrm{Return}_t = \frac {\sum_{i}{\textrm{(w}_{i}  \times  \textrm{Return}_{i,t})}} {\sum_{i}{\textrm{w}_{i}}}, \quad \textrm{Return}_{i,t} =  \frac {\textrm{totalvalue}_{i,t} - \textrm{totalvalue}_{i,t2006end}} {\textrm{totalvalue}_{i,t2006end}},\quad w_i = \textrm{totalvalue}_{i,t_0}\ .$$
+Remark: The weights are still the values of the initial portfolio in 2000:I.
+
+### 5.2 Visualization of the Performance Index and Return
+
+Now we will visualize the performance index from 2000:I to 2010:IV and the return from 2006:IV to 2010:IV. We start by loading the data sets `performance_index.txt`, which we store in `index`  and `indivperformance_wide.dta` which we store in `perfo`. `indivperformance_wide.dta` is the original data set from which the `performance_index.txt` data set was derived.
+
+**Task**: Load the two data sets `performance_index.txt` and `performance.dta` and store them in `index` and `perfo`. Simply press `edit` and `check` since the code is already provided.
+
+```{r "5___Performance"}
+index <- read.table("performance_index.txt")
+perf <- read.dta("performance.dta")
+```
+
+**Task**: Press `check` to output ten random rows of the two data sets using `samle_n()`.
+
+```{r "5___Performance__2"}
+sample_n(index, size = 10)
+sample_n(perf, size = 10)
+```
+
+info("indivperformance_wide.dta") # Run this line (Strg-Enter) to show info
+
+As you can see, the index data set contains only four columns, the column with the date and the one with the index levels of the three groups which will make it easy and fast to plot while, in the original data set, the index levels are only included at a person level, but can be calculated using the formulas above. The data set is already in long format and therefore no further steps are necessary to plot the index.
+
+**Task**: Press `check` to plot the indices using `ggplot()`.
+
+```{r "5___Performance__3",fig.width=9, fig.height=6, dev='svg'}
+ggplot(data = index, aes(x = as.Date.character(date), y = index, color = group)) +
+  geom_line() +
+  theme_bw() +
+  scale_x_date(labels = date_format("%Y"), breaks = date_breaks("1 year")) +
+  labs(title = "Trading Performance Indices", x = "Year", y = "Index Value") +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1), legend.position = "top", legend.title = element_blank()) +
+  annotate("rect", xmin = as.Date("2004-01-01", "%Y-%m-%d"), xmax = as.Date("2007-01-01", "%Y-%m-%d"), ymin = -0.04,ymax = 0.08, alpha = .2, fill = "red") +
+  scale_y_continuous(breaks = seq(-0.04, 0.08, by = 0.02))
+```
+
+*Figure 5.1:* Performance Indices consisting of the accumulated difference of the returns of trading and buy-and-hold strategy. Replication of Figure 4 - Trading Performance Indices from "Wall Street and the Housing Bubble" (p. 2823).
+
+**Task**: Press `check` to plot the cumulative return from 2006 to 2010 using `ggplot()`.
+
+```{r "5___Performance__4",fig.width=9, fig.height=6, dev='svg'}
+ggplot(data = index, aes(x = as.Date.character(date), y = return2006, color = group)) +
+  geom_line() +
+  theme_bw() +
+  scale_x_date(labels = date_format("%Y"), breaks = date_breaks("1 year")) +
+  labs(title = "Cumulative Return from 2006 to 2010", x = "Year", y = "Cumulative Return") +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1), legend.position = "top", legend.title = element_blank()) +
+  scale_y_continuous(breaks = seq(-0.09, 0.03, by = 0.02)) +
+  geom_hline(yintercept = 0, alpha = .4)
+```
+
+*Figure 5.2:* Cumulative Return of the trading strategy after 2006:IV. Based on of Table 7 - Performance Index, Panel B from "Wall Street and the Housing Bubble" (p. 2824).
+
+***What are the implications of those findings?***
+
+As you can see in Figure 5.1, the performance indices for securitization agents and lawyers moved quite similar until 2006:IV. The equity analysts performed slightly worse during this period, but all groups generated an increasing additional value compared to the buy-and-hold-strategy. After that date, all three groups lost ground compared to the buy and hold strategy. Lawyers and equity analysts performed more and more similar while securitization agents ended up being the worst of the three groups. If we take a look at the cumulative return after 2006:IV in Figure 5.2, even though performing slightly better than the lawyers, the securitization agents performed worse compared to the equity analysts. Which of those two indicators is the better one? Since the performance index is a benchmark against a constructed buy-and-hold portfolio, it may capture differences due to trading better than the return does as implied by Cheng et al. (p. 2822, 2014). These findings might indicate optimism about the housing market which supports the earlier findings but this is raw data without any controls for other possible factors. To  rule out that those factors are responsible for the observed difference, we must conduct deeper analysis.
+
+### 5.3 Regression Analysis
+
+We will run four regressions all in all, two for performance indices and two for the returns between 2006:IV and 2010:IV. Those regressions will be:
+
+1) Weighted Performance index in 2010:IV for...
+
+  + i) securitization agents vs equity analysts, controlling for age_cat.
+
+  + ii) securitization agents vs lawyers, controlling for age_cat.
+
+2) Weighted Return between 2006:IV and 2010:IV for...
+
+  + i) securitization agents vs equity analysts, controlling for age_cat.
+
+  + ii) securitization agents vs lawyers, controlling for age_cat.
+  
+As mentioned above, we will use weights to ensure that every portfolio is represented properly for the regression by adding weights. The weights are represented by the value of the portfolios at the end of the first quarter, 2000:I.
+
+First, we have to load the additionally needed data set `person_dataset.dta` and merge that data with `perfo` to get the age category, `age_cat` which is required for the regressions as a control variable.
+
+info("merge") # Run this line (Strg-Enter) to show info
+
+**Task**: Load `person` and use `merge()` to merge `perf` and `person` to a data frame which you assign to `perfo`.
+
+```{r "5___Performance__6"}
+# Enter your command below:
+```
+
+
+Now we need two data sets, one containing the portfolios of securitization agents and equity analysts and the other containing the portfolios of securitization agents and lawyers with the additional condition that an age category must be available since we will control for age.
+
+**Task**: Construct two data frames, one containing the portfolio development of securitization agents and equity analysts which will be stored in `set1` and one containing the portfolio development of securitization agents and lawyers which will be stored in `set2`. Additionally, the `age_cat` must be available. You don't have to type in the commands yourself, just press `check` to proceed.
+
+```{r "5___Performance__7"}
+set1 <- filter(perfo, group %in% c("Securitization", "Equity Analysts") & age_cat != "NA")
+set2 <- filter(perfo, group %in% c("Securitization", "Lawyers") & age_cat != "NA")
+```
+
+Now we will start with the regressions 1) i) and ii), the performance index regressions. We estimate robust standard errors using `coeftest()` from the package `lmtest` and `vcovHC()` from the `sandwich` package and specify the way to compute those errors to HC1 (we don't need to cluster them though since we don't have multiple values of one person in the performance index).
+
+info("coeftest() and vcovHC()") # Run this line (Strg-Enter) to show info
+
+**Task**: Run the regressions `r1`, `r2`. `r1` for the regression adjusted differences in performance between securitization agents and equity analysts and `r2` for the regression adjusted differences in performance between securitization agents and lawyers. Compute robust standard errors using the `coeftest()` from the `lmtest` package and `sandwich()` from the `sandwich` package.
+
+```{r "5___Performance__9"}
+# First, we have to load the packages for the coefficient test
+library(sandwich)
+library(lmtest)
+
+# Second the performance index for the securitization agents and equity analysts:
+r1 <- lm(performanceindex ~ group + age_cat, weights = set1$totalvalue_buyhold_2000I, data = set1)
+reg1 <- coeftest(r1, vcov = vcovHC(r1,"HC1"))
+
+# Third the performance index for the securitization agents and lawyers:
+r2 <- lm(performanceindex ~ group + age_cat, weights = set2$totalvalue_buyhold_2000I, data = set2)
+reg2 <- coeftest(r2, vcov = vcovHC(r2,"HC1"))
+```
+
+**Task**: Press `check` to output the two regressions side by side using `stargazer()`.
+
+```{r "5___Performance__10",results='asis'}
+stargazer(reg1, reg2, type = "html", keep = c("group"), report = "vct*", covariate.labels = c("Securitization"), column.labels = c("Equity Analysts", "Lawyers"), add.lines = list(c("Age Category", "Yes", "Yes")))
+```
+
+*Table 5.1:* Regression adjusted differences of the performance indices between securitization agents and the control groups. This table replicates parts of Table 7, Panel B of "Wall Street and the Housing Bubble" (p. 2824).
+
+#! addon__quiz__coefficients
+
+
+As you can see in Table 5.1, there is a difference of -2.7% (significant at the 5% level) in performance compared to the equity analysts and -1.8% (insignificant) compared to the lawyers. Hence, the trading behavior of the agents did hurt their performance compared to their controls.
+
+Now let's run the regressions 2) i) and ii) to see if we can observe differences in the return between 2006IV and 2010IV.
+
+**Task**: Regress `return_from_2006` (which contains the individual returns) against `group` controlling for `age_cat` using the data sets `set1` and `set2` which we already created and store them in `r3` and `r4`. Perform a significance test of the coefficients after each regression and save the outcome in `reg3` and `reg4` using the `HC1` covariance matrix. Don't forget to specify the weights!
+
+```{r "5___Performance__11"}
+# Enter your command below
+```
+
+
+**Task**: Use stargazer to output the regressions. Set the `type` to html, set `keep` so that only the effect of the `group` is shown, `report` so that the t-statistic is reported, add the information that we controlled for age category and add column labels with the two control groups. Press `check` to do so.
+
+```{r "5___Performance__12",results='asis'}
+stargazer(reg3, reg4, type = "html", keep = c("group"), report = "vct*", covariate.labels = c("Securitization"), column.labels = c("Equity Analysts", "Lawyers"), add.lines = list(c("Age Category", "Yes", "Yes")))
+```
+
+*Table 5.2:* Regression adjusted differences of the cumulative return after 2006:IV between securitization agents and the control groups. This table replicates parts of Table 7, Panel B of "Wall Street and the Housing Bubble" (p. 2824).
+
+Table 5.2 shows that there is a difference of -2.2% (significant at the 1% level) in performance compared to the equity analysts and +0.4% (insignificant) compared to the lawyers.
+
+***Findings***
+
+As you can see in Table 5.1, the performance index where we find negative effects for being part of the securitization group while we find significant negative and an insignificant positive effect concerning the difference in return between 2006:IV and 2010:IV in Table 5.2. How is it possible, that the securitization agents received a higher return while being worse off concerning the performance index compared to the lawyers. This difference lies in the definition of the performance index. Recall, it was defined as the accumulated difference between return of the trading and the buy and hold strategy, while we only observe the return of the trading strategy in the return regression. As mentioned above, the performance index is the better indicator for the performance of the trading, so we can reject our third hypothesis since the agents did not perform significantly better compared to their controls.
+
+This exercise refers to the pages 2822 - 2825 of "Wall Street and the Housing Bubble".
+
+## Exercise 6.1 - Income Shocks
+
+Now we will deal with the question raised with hypotheses four. Were the agents aware that their high bonuses and their high income was not sustainable but rather temporarily. We do this to mitigate the concern that the agents may have bought second homes due to a consumption motive rather than the purchase being an investment decision which was assumed in exercise 4 (Cheng et al, 2014). We will test if the securitization agents might have been aware of the temporary income shock by analyzing the value-to-income (vti) of the securitization agents and their controls (equity analysts and control groups).
+
+info("vti") # Run this line (Strg-Enter) to show info
+
+If the securitization agents showed signs of awareness that the high income they received was temporarily, they would have decreased their vti significantly during the boom period and they would have way smaller vti compared to their controls and to the pre-boom period. (Cheng et al, 2014)
+
+Before analyzing the vti, we will analyze the income the three groups received during our three different periods to examine whether our claim that the securitization agents received income shocks is true.
+
+### Income Shocks
+
+To make data manipulation easier and shorter, I already customized the `hmda_matches.dta` data set and stored this customized data set in `income_desc.dta`. The main differences between those two data sets are that `income_desc.dta` is complemented by a column that indicates the period, that income information not in our observation period is excluded and that the income and vti is already collapsed on a period, person level.
+
+Before we take a closer look at our income data, we have to load it.
+
+**Task**: Load the data set `income_desc.dta` and store it in `income`. Press `edit` and `check` to do so.
+
+```{r "6_1___Income_Shocks"}
+income <- read.dta("income_desc.dta")
+```
+
+info("income_desc.dta and vti_desc.dta") # Run this line (Strg-Enter) to show info
+
+Let's look at the data stored in `income`.
+
+**Task**: Output ten random rows of `income` using `sample_n()`. Press `check` to do so.
+
+```{r "6_1___Income_Shocks__2"}
+sample_n(income, size = 10)
+```
+
+Now we would like to get some summary statistics on a period, group level. To do so, we will group the data by `group` and `period` and we will compute the mean, median and standard deviation of the real income which is stored in the variable `income_real`.
+
+info("grid.table()") # Run this line (Strg-Enter) to show info
+
+**Task**: Load `gridExtra` and use `group_by()` to group the data set `income` by `group` and `period` and compute the mean, median and standard deviation of `income_real` using `summarize()`. Connect the two functions with the pipe operator `%>%` and store it in `income1`, round the values to one digit. After performing those two steps, output `income1` using `grid.table()` from `gridExtra`. Simply press `check`, the code is already provided.
+
+```{r "6_1___Income_Shocks__4",fig.width=9, fig.height=6, dev='svg'}
+library(gridExtra)
+income1 <- group_by(income, group, period)%>%
+  summarize(mean = round(mean(income_real),1), median = round(median(income_real),1), sd = round(sd(income_real),1), persons = length(income_real))
+
+grid.table(income1, rows = NULL)
+```
+
+*Table 6.1:* Mean and median income with standard deviation of the income in $k for the three periods. This table replicates parts of Table 3 from "Wall Street and the Housing Bubble" (p. 2811).
+
+As you can see in Table 6.1, the difference for the securitization group from pre-boom to boom is \$92.4k which would indicate an increase by 37.5% while the difference for equity analysts is \$58.0k (+16.1%) and for lawyers \$3.6k (+2.1%). Since we don't know if the income shock for securitization agents is significant or just coincidence, we will do a regression to examine whether the income numbers from the boom period age significantly different from the income numbers of the pre-boom period. We could also do a t-test, but since we can easily get the clustered t-statistics doing a `felm()` regression, we will stick with `felm()`. As mentioned by Cheng et al. (2014), since we only observe taxable income, it is possible that the income is downward biased since the income data often covers only taxable income, which may lead to problems in comparing the vtis later if the bias is not constant over time.
+
+But that table is clearly not the most elegant and clearest way to display outcome of the income analysis. Let's rather plot it using `ggplot()`.
+
+info("geom_label_repel()") # Run this line (Strg-Enter) to show info
+
+**Task**: Press `check` to use `ggplot()` to plot a scatter plot of the `mean` in each `period` for every `group` from the dataset `income1` and to add labels to the data points using `geom_label_repel`. Press `check` to do so.
+
+```{r "6_1___Income_Shocks__6",fig.width=9, fig.height=6, dev='svg'}
+library(ggrepel)
+
+ggplot(data = income1, aes(x = period, y = round(mean, 2), color = group)) +
+  geom_point(size = 3.5)+
+  theme_bw()+
+  labs(title = "Income", y = "Income")+
+  scale_y_continuous(limits = c(100, 500)) +
+  theme(legend.position = "top", legend.title = element_blank()) + 
+  geom_text_repel(aes(y = mean, label = round(mean, 2)))
+```
+
+*Figure 6.1:* Plot of the mean income for the three periods. Based on Table 3 - Income from "Wall Street and the Housing Bubble" (p. 2811).
+
+### Boom - Preboom
+
+#! addon__quiz__income
+
+
+To check if boom - pre-boom is significant, we will construct a data frame containing only the income data from securitization agents in boom or pre-boom period, run a regression with clustered standard errors and output it.
+
+**Task**: Construct a data frame called `sample` using `filter()` from `income` containing only those rows that have information about securitization agents and where the `period` is pre-boom or boom. Run a regression that estimates robust clustered errors with `felm()` and regresses `income_real` against `period`, clustered by `keyident`. Output the regression using `stargazer()` where t statistics are reported. Press `check` to do so.
+
+```{r "6_1___Income_Shocks__7",results='asis'}
+sample <- filter(income, group == "Securitization" & period %in% c("pre-boom", "boom"))  
+
+r1 <- felm(formula = income_real ~ period | 0 | 0 | keyident, data = sample)
+
+stargazer(r1, type = "html", report = "vct*")
+```
+
+*Table 6.2:* Difference between the mean income in pre-boom and boom, with significance test for the securitization agents. This Table replicates parts of Table 3 - Income of "Wall Street and the Housing Bubble" (p. 2811).
+
+The difference in income between boom and pre-boom is significant for securitization agents on a 10% level (Table 6.2). Thus, we can conclude that the securitization agents received a significant income shock. If the other groups didn't receive that income shock (at all or in a smaller scale), the securitization agents should have decreased their vti during the boom period compared to their vti during the pre-boom period as well as compared to those of the control groups given awareness.
+
+Before focusing on the vti analysis, let's first see if the income of the equity analysts and of the lawyers changed significantly from pre-boom to boom.
+
+**Task**: Press `check` to perform the same regression done above for securitization agents for equity analysts and lawyers.
+
+```{r "6_1___Income_Shocks__8",results='asis'}
+sample2 <- filter(income, group == "Equity Analysts" & period %in% c("pre-boom", "boom"))
+
+sample3 <- filter(income, group == "Lawyers" & period %in% c("pre-boom", "boom"))
+
+r2 <- felm(income_real ~ period | 0 | 0 | keyident, data = sample2)
+
+r3 <- felm(income_real ~ period | 0 | 0 | keyident, data = sample3)
+
+stargazer(r2, r3, type = "html", report = "vct*", column.labels = c("Equity Analysts", "Lawyers"))
+```
+
+*Table 6.3:* Difference between the mean in pre-boom and boom, with significance test for the equity analysts and lawyers. This table replicates parts of Table 3 - Income of "Wall Street and the Housing Bubble" (p. 2811).
+
+***What do those Findings Imply?***
+
+As you can see in Table 6.3, the effect is smaller and not significant for either of the two control groups, so we expect the vti for the securitization sample to be lower in the boom period compared to the pre-boom period and in a difference-in-difference analyzing group membership and the period.
+
+This exercise refers to the pages 2810 - 2811 of "Wall Street and the Housing Bubble".
+
+## Exercise 6.2 - Consumption
+
+Now that we know what we are looking for, let's check if we can find evidence for awareness, if the agents decreased their vti compared to the controls. We will look at the "raw" numbers, the significance of a potential difference between boom and pre-boom and a difference-in-difference analysis between the groups and the periods.
+
+info("difference-in-difference") # Run this line (Strg-Enter) to show info
+
+To analyze the vti, `hmda_matches.dta` was modified which led to the data set `vti_desc.dta`. This data set has one column indicating the period, excludes all entries with income<100 (to minimize the effect of outliers) and it is aggregated at a person, period level.
+
+**Task**: Load the modified data set `vti_desc.dta`, store it in `vti` and show ten random entries. Simply press `check` to do so.
+
+```{r "6_2___Consumption"}
+vti <- read.dta("vti_desc.dta")
+sample_n(vti, size = 10)
+```
+
+As you can see, `vti_desc.dta`, just like `income_desc.dta`, contains the group, stored in `group`, the year of the purchase in `purchaseyear`, the `vti`, and the `period` which are all of interest for us since we want to take a closer look at `vti` using `group` and `period`.
+
+**Task**: Construct a data table containing the vti for every group in every period and store it in `vti1`. Output `vti1` afterwards using `grid.table()`. Round the values to one digit. Hint: It works quite similar like the one for income with `group_by()` and `summarize()`.
+
+```{r "6_2___Consumption__2",fig.width=9, fig.height=6, dev='svg'}
+# Enter your code below:
+```
+
+*Table 6.4:* Mean and median vti with standard deviation for the three periods. This Table replicates parts of Table 9 - Value-to-Income from "Wall Street and the Housing Bubble" (p. 2826).
+
+
+Since this Table 6.4 is quite messy, we will again plot the mean using `ggplot()` to have a nicer and tidier visualization that is easier to grasp. This time we will plot the median of the vtis.
+
+**Task**: Use `ggplot()` to plot a scatter plot of the `mean` in each `period` for every `group` from the dataset `vti1`. Give it the title "Vti" and change the name of the y axis to "VTI" as well. Set the limits of the y axis to 2.25 and 3.5 using `scale_x_continuous`, the size of the points to 3.5 and use the already earlier used black and white theme.
+
+```{r "6_2___Consumption__3",fig.width=9, fig.height=6, dev='svg'}
+# Delete the leading '#' and replace the question marks:
+# ggplot(data = ???, aes(x = ???, y = ???, color = group)) +
+#   geom_point(size = ???)+
+#   theme_bw()+
+#   labs(title = "VTI", y = "VTI")+
+#   scale_y_continuous(limits = c(2.25, 3.5)) +
+#   theme(legend.position = "top", legend.title=element_blank()) +
+#   geom_text_repel(aes(x = period, y = median, label = ???))
+```
+
+*Figure 6.2:* Plot of the mean vti for the three periods. Based on Table 9 - Value-to-Income from "Wall Street and the Housing Bubble" (p. 2826).
+
+
+#! addon__quiz__vti
+
+
+According to Figure 6.2, the securitization agents increased their vti by 6.3% compared to the pre-boom period, the equity analysts by 6.9% and the lawyers by 13.8%, the securitization agents still do have the highest vti throughout our three groups while the equity analysts have the lowest. It is noticeable that, different from the other groups, the securitization agents' mean vti increased while their median decreased. This indicates that there must be some people in the sample that bought at relatively high vti's. The following question arises: What about the significance of the difference and what about the so-called difference-in-difference between the periods and groups?
+
+### Boom - Preboom
+
+As you can see, the securitization agents did not decrease their vti from pre-boom to boom, but rather increased it, leading to the conclusion that they expected their high income not to be transitory but constant or even more increasing in the future. Let's check if that difference is significant or not.
+
+We will perform the same steps like in Exercise 6.1 to obtain the significance of the difference between pre-boom and boom concerning vti. We will start with the difference for the securitization agents.
+
+**Task**: Construct a data frame which will be called `sample` from `vti` in which all entries of securitization agents from pre-boom and boom are included. Run a `felm()` regression and output it with `stargazer()`. Press `check` to do so.
+
+```{r "6_2___Consumption__4",results='asis'}
+sample <- filter(vti, group == "Securitization" & period %in% c("pre-boom", "boom"))
+
+r1 <- felm(formula = vti~period | 0 | 0 | keyident, data = sample)
+
+stargazer(r1, type = "html", report = "vct*")
+```
+
+*Table 6.5:* Difference between the mean of vtis in pre-boom and boom, with significance test for the securitization agents. This Table replicates parts of Table 9 from "Wall Street and the Housing Bubble"  (p. 2826).
+
+Even though the effect of the period is not significant, we can conclude  that the securitization agents did not decrease their vti significantly.
+
+### Difference in Difference
+
+How will we do a difference in difference?
+
+We will refer to three columns. First, the column `vti`, which is our dependent variable, secondly the column `period` (our first independent variable), indicating the treatment and lastly the `group` column (our second independent variable) indicating the membership to our groups (see Torres Reina, 2015). Since we do have two control groups, we must perform two difference-in-difference analyses. For more information on difference-in-difference analysis see the infobox above.
+
+**Task**: Filter the `vti` data sets two times. One time for the securitization agents and the equity analysts and the second time for the securitization agents and the lawyers. Ensure that we only have entries where `period` is pre-boom or boom and save the arising data frames in `did1` and `did2`. Press `check` to do so.
+
+```{r "6_2___Consumption__5"}
+did1 <- filter(vti, group %in% c("Securitization", "Equity Analysts") & period %in% c("pre-boom", "boom"))
+did2 <- filter(vti, group %in% c("Securitization", "Lawyers") & period %in% c("pre-boom", "boom"))
+```
+
+Now we will run the two regressions using `felm()` from the `lfe` package which enables us to produce the exact same results as the authors results in the paper including errors clustered on a person level.
+
+**Task**: Use `felm()`  to run the two regressions of `vti` against `period*group` (one for did1 and one for did2) and store them in `r2` and `r3` specifications for covariates and iv are not needed, the standard errors should be clustered by `keyident`. Output the outcome of the regressions with `stargazer()`.
+
+```{r "6_2___Consumption__6",results='asis'}
+#Enter your command below:
+```
+
+*Table 6.6:* Difference-in-Difference analysis between securitization agents and the control groups concerning pre-boom and boom. This Table replicates parts of Table 9 from "Wall Street and the Housing Bubble"  (p. 2826).
+
+
+***Findings***
+
+The terms of interest here are the ones in the row periodboom:groupSecuritization. We don't see a significantly negative effect from pre-boom to boom and neither for the difference in difference. This leads to the conclusion that the securitization agents didn't expect their high income to be temporarily and therefore didn't decrease their vti, neither compared to their pre-boom vti nor compared to their controls.
+
+This exercise refers to the pages 2825 - 2827 of "Wall Street and the Housing Bubble".
+
+## Exercise 7 - Financing
+
+In this part, we will examine if another possible explanation not covered by our four hypotheses - the terms of financing - could influence our results. We will focus on two different concerns. First, on interest rates and second on the loan-to-value of the groups.
+
+### 7.1 Interest Rates
+
+It might be that the securitization agents had easier and cheaper ways to finance their purchases compared to their controls, the equity analysts and lawyers. If true, that might have offset the effect of possible awareness. To examine whether this is true or not, we will take a look at the interest rates faced by the securitization agents and the two control groups.
+
+**Task**: Load the data set `properties.dta` and store it in `prop`. Show ten random rows of `prop` afterwards. Press `check` to do so.
+
+```{r "7___Financing"}
+prop <- read.dta("properties.dta")
+tail(prop)
+```
+
+After loading the data successfully, we have to exclude the properties that were purchased before 2000 or after 2010. Additionally, we are only interested in those entries where a mortgage rate is available, otherwise we would not be able to use the data to visualize interest rates.
+
+**Task**: Exclude all purchases that were not made between 2000 and 2010 with a mortgage interest rate, group it by `group` and store it in `intrate` using the pipe operator. Press `check` to do so.
+
+```{r "7___Financing__2"}
+intrate <-  filter(prop, purchaseyear %in% c(2000:2010) & mrtgintrate != "") %>%
+  group_by(group)
+```
+
+info("properties.dta") # Run this line (Strg-Enter) to show info
+
+info("aggregate") # Run this line (Strg-Enter) to show info
+
+**Task**: Construct a data frame named `intrate_agg` containing the mean of the interest rates (`mrtgintrate`) for every `year` and every `group` using `aggregate()` on the data set `intrate`. To do so remove the leading '#' and replace the question marks.
+
+```{r "7___Financing__4"}
+# Remove the leading '#' and replace the question marks below:
+# intrate_agg <- aggregate(list(interestrate = intrate$m???te), list(year = ???$purch???, group = intrate$group), ???)
+```
+
+
+**Task**: Press `check` to plot `intrates` using `ggplot()`.
+
+```{r "7___Financing__5",fig.width=9, fig.height=6, dev='svg'}
+ggplot(data = intrate_agg, aes(x = year,y = interestrate,color = group)) +
+  geom_line() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top", legend.title = element_blank()) +
+  labs(x = "Year", y = "Interest Rate", title = " Mean Interest Rates Faced from 2000 to 2010") +
+  scale_x_continuous(breaks = c(2000:2010)) +
+  annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = 3, ymax = 9, alpha = .2, fill = "red") +
+  scale_y_continuous(breaks = seq(3, 9, by = 1))
+```
+
+*Figure 7.1:* Development of the interest rates for the three groups between 2000 and 2010. Replicates parts of Figure 3 - Financing, Panel A from "Wall Street and the Housing Bubble" (p. 2820).
+
+***Findings***
+  
+As you can see in Figure 7.1, the interest rates are quite similar throughout the whole time with similar variation across time between the securitization agents and the equity analysts. The rates move also similar for securitization agents and lawyers, except 2006 and 2007. Still, those numbers should be treated with some, since the sample is very small. In 2007 there were only four purchases with information for the lawyer group for instance, which might be a reason why the authors decided not to include the lawyers group in their visualization.
+
+### 7.2 Tail risk laid off to lenders (loan-to-value analysis)
+
+Another strategy could have been that the securitization agents laid off their tail risk to lenders by increasing their loan-to-value (ltv). We will check that by computing the ltv for all the three groups for every year between 2000 and 2010 and compare them by plotting the three. But before doing so, what is tail risk? Tail risk describes the risk associated with extreme events, which are very unlikely like a crash of home prices. (see http://lexicon.ft.com/Term?term=tail-risk) 
+
+It could have been that the securitization agents showed awareness in such way that they expected that the tail risk comes into reality when the bubble crashes and therefore insured themselves against tail risk by decreasing their skin in the game which is analogously to increasing the ltv. (Cheng et al, 2014) This would have been possible especially for so called non-recourse debt, which grants the lender access to the collateral of the mortgage, but does not grant the lender access to the remaining wealth of the individual. (Gerardi, 2010)
+
+info("ltv") # Run this line (Strg-Enter) to show info
+
+The first step in doing so is that we construct a data frame from `prop` that contains all relevant purchases. In our case the relevant purchases are all purchases made between 2000 and 2010 that have an available ltv (all ltv's bigger than 100 are already excluded to restrain the effect of outliers).
+
+**Task**: Construct a data frame from `prop` that contains all properties purchased between 2000 and 2010 and have ltv information available and assign it to `ltvdata`.
+
+```{r "7___Financing__6"}
+#???dat?? <- ??????(prop, ???!="" & purch?????ar?c(2000:2010))
+```
+
+**Task**: Use `aggregate()` to get the median ltv for all the three groups for every year from 2000 to 2010 and store the aggregated data set in `ltvdata_agg`. Press `check`, the command is already provided.
+
+```{r "7___Financing__7"}
+ltvdata_agg <- aggregate(list(ltv = ltvdata$ltv), list(year = ltvdata$purchaseyear, group = ltvdata$group),median)
+```
+
+**Task**: Plot the median ltv of all groups using `ggplot()`.
+
+```{r "7___Financing__8",fig.width=9, fig.height=6, dev='svg'}
+ggplot(data = ltvdata_agg, aes(x = year, y = ltv, color = group)) +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Year", y = "LTV", title = "Median LTV from 2000 to 2010") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom", legend.title = element_blank()) +
+  scale_x_continuous(breaks = c(2000:2010)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1)) +
+  annotate("rect", xmin = 2003.5, xmax = 2006.5, ymin = 0, ymax = 1, alpha = .2, fill = "red")
+```
+
+*Figure 7.2:* Development of the ltv for the three groups between 2000 and 2010. Replication of Figure 3 - Financing, Panel B from "Wall Street and the Housing Bubble" (p. 2820).
+
+***Findings***
+  
+In Figure 7.2, there are only small changes in the median ltv of the three groups. These changes tend to be quite similar and they move in the same direction with slightly different amplitude. Thus, we cannot conclude that the agents laid their tail risk off to lenders which could have been a possible explanation of the home purchases observed earlier.
+
+This exercise refers to the pages 2799, 2819 and 2820 of "Wall Street and the Housing Bubble".
+
+## Exercise 8 - Conclusion
+
+Our goal was to test awareness of mid-level managers about the US housing bubble by testing four hypotheses. We tested two full awareness hypothesis. Firstly, we tested if the securitization agents divested more before 2007. Secondly, we focused on the question if they didn't increase their exposure to the market compared to two control groups. We tested if the performance of constructed portfolios was better. Additionally, we tested if they did foresee that the income during boom is not sustainable. We then considered, if they faced different interest rates that could have led them to invest more in housing and finally, if they tried to get rid of the tail risk associated with the purchases by excessively increasing the loan-to-value.
+
+During our analysis we rejected all four hypothesis due to insignificant or significant effects which were mostly moving in the direction one would not expect them to move given awareness of the agents. It seems that they were divesting less, buying more second homes or swapping up more, were rather increasing the value-to-income which indicates, that they did not belief that their high income is temporarily). We also showed that they were neither facing different interest rates, nor trying to increase the loan-to-value in the boom period. This leads to the conclusion that, based on this analysis, the agents were rather not aware of the bubble but optimistic about the housing market.
+
+This leads to some questions that were also considered by Cheng et al (2014). Are there information deficits? Should information processes and flow be under focus? How can the forming of beliefs be guided in a better way? Improving information flows and processes could enable analysts to identify potential bubbles earlier. Thus, market mechanisms would correct the prices earlier and the bust would maybe not materialize, but instead employees and their contracts are of main focus in this sector today. 
+
+But we should be aware of the fact that we did not study beliefs of the subprime segment of the market, since it is very unlikely that the securitization agents were subprime borrowers and we do not observe the whole balance sheet of a household, which should not be a big issue since it is remarkably hard to short the housing market. (Cheng et al, 2014)
+
+
+This exercise refers to the page 2827 of "Wall Street and the Housing Bubble".
+
+## Exercise 9 - References and Changes on Datasets
+
+### Bibliography
+
+- Albert, S. M. and Duffy J. (2012): *Differences in Risk Aversion between Young and Older Adults*, Neuroscience and Neuroeconmics, 13 February 2012, https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3852157/
+- Benabou, R. (2013): *Groupthink: Collective Delusions in Organizations and Markets*, Review of Economic Studies (2013) 80, 429-462, https://www.princeton.edu/~rbenabou/papers/Review%20of%20Economic%20Studies-2013-Benabou-429-62.pdf
+- Bernanke, B. (2008): *Fostering Sustainable Homeownership*, National Community Reinvestment Coalition Annual Meeting March 14, 2008, https://www.federalreserve.gov/newsevents/speech/bernanke20080314a.htm, last downloaded 23.09.2017
+- Brunnermeier, M. and Julliard, C. (2008): *Money Illusion and Housing Frenzies*, The Review of Financial Studies Volume 21, Issue 1, 1 January 2008, Pages 135-180
+- Cheng I., Raina S., and Xiong W. (2014): *Wall Street and the Housing Bubble*, American Economic Review 2014, 104(9): 2797-2829, https://www.aeaweb.org/articles?id=10.1257/aer.104.9.2797
+- Cheng I., Raina S., and Xiong W. (2014a): *Wall Street and the Housing Bubble - Online Appendices*, https://www.aeaweb.org/articles?id=10.1257/aer.104.9.2797, last downloaded 23.09.2017
+- Dodge, Y. (2008): *The Concise Encyclopedia of Statistics*, Springer Verlag, p. 565
+- ECB (2008): *The Incentive Structure of the Originate and Distribute Model*, EU publications December 2008 https://publications.europa.eu/en/publication-detail/-/publication/5fed4f62-94de-499e-aa09-3227e845488f/language-en, last downloaded 23.09.2017
+- Ejdemyr, S. (2016): *Wide & Long Data*, standford.edu, https://stanford.edu/~ejdemyr/r-tutorials/wide-and-long/, last downloaded 23.09.2017
+- Gaure, S. (2016): *Package 'lfe'* https://cran.r-project.org/web/packages/lfe/lfe.pdf, last downloaded 23.09.2017
+- Gerardi, K. (2010): *Did nonrecourse mortgages cause the mortgage crisis?*, Federal Reserve Bank of Atlanta http://realestateresearch.frbatlanta.org/rer/2010/02/did-nonrecourse-mortgages-cause-the-mortgage-crisis.html, last downloaded 23.09.2017
+- IMF (2009): *Restarting Securitization Markets: Policy Proposals and Pitfalls*, Chapter 2 of the Global Financial Stability Report, October 2009, http://www.imf.org/external/pubs/ft/gfsr/2009/02/, last downloaded 23.09.2017
+- IMF (2013): *Securitization: Lessons Learned and the Road Ahead*, IMF Working Paper, December 19, 2013, http://www.imf.org/en/Publications/WP/Issues/2016/12/31/Securitization-Lessons-Learned-and-the-Road-Ahead-41153, last downloaded 23.09.2017
+- Jobst, A. (2008): *What is Securitization*, Finance and Development (IMF) September 2008, https://www.imf.org/external/pubs/ft/fandd/2008/09/pdf/basics.pdf, last downloaded 23.09.2017
+- Paligorova, T. (2009): *Agency Conflicts in the Process of Securitization*, Bank of Canada Review Autumn 2009, http://www.bankofcanada.ca/wp-content/uploads/2010/06/paligorova.pdf, last downloaded 23.09.2017
+- Reserve Bank of New Zealand: *Factsheet: LVR restrictions*, Reserve Bank of New Zealand, https://www.rbnz.govt.nz/-/media/ReserveBank/Files/Financial%20stability/LVR/lvr-restrictions-guide-for-borrowers.pdf?la=en, last downloaded 23.09.2017
+- Shiller, R. J. (2007): *Understanding Recent Trends in House Prices And Home Ownership*, Proceedings - Economic Policy Symposium - Jackson Hole, Federal Reserve Bank of Kansas City, pages 89-123
+- Smith, M. H., Smith, G. (2006): *Bubble, Bubble, Where's the Housing Bubble?*, Brookings Papers on Economic Activity. 73. . 10.1353/eca.2006.0019.
+- Sribney, W. : *Comparison of standard errors for robust, cluster, and standard estimators*, StataCorp, https://www.stata.com/support/faqs/statistics/standard-errors-and-vce-cluster-option/#, last downloaded 23.09.2017
+- Stata Manuals: *regress - Linear Regression*, StataCorp, https://www.stata.com/manuals13/rregress.pdf, last downloaded 23.09.2017
+- Stock James H. and Watson, M. W. (2007): *Introduction to Econometrics*, 2nd Edition, Chapter 5, 6, 10 and 18, Pearson Education Inc, International Edition
+- Torres Reina, O . (2015): *Differences in Differences Using R*, Princeton University, http://www.princeton.edu/~otorres/DID101R.pdf, last downloaded 23.09.2017
+- Von Auer, L. (2016): *Oekonometrie: Eine Einfuehrung*, 7th Edition, Springer Verlag, Chapter 5, 8, 9, 17 and 18
+- Wickham, H. (2009): *ggplot2: Elegant Graphics for Data Analysis*, 2nd Edition, Springer Verlag, Chapter 7
+- Wickham, H. and Grolemund, G. (2017): *R for Data Science*, 1st Edition, Chapter 18, O'Reilly, http://r4ds.had.co.nz/
+- Williams, R. (2015): *Specification Error: Omitted and Exreaneous Variables*, University of Notre Dame, https://www3.nd.edu/~rwilliam/stats2/l41.pdf, last downloaded 23.09.2017
+- Zeileis, A. (2004): *Econometric Computing with HC and HAC Covariance Matrix Estimators*, Journal of Statistical Software 11(10), 1-17. URL http://www.jstatsoft.org/v11/i10/.
+- Zeileis, A. (2008): *Applied Econometrics with R*, Chapter 4.3, Springer Verlag
+
+### R and R Packages
+
+- Auguie, B. (2017). gridExtra: "Miscellaneous Functions for "Grid" Graphics", R package version 2.3. https://CRAN.R-project.org/package=gridExtra, last downloaded 23.09.2017
+- Gaure, S. (2016). lfe: "Linear group fixed effects." R package version 2.5-1988. The R Journal, 5(2):104-117, Dec 2013
+- Hlavac, M. (2015). stargazer: "Well-Formatted Regression and Summary Statistics Tables." R package version 5.2. http://CRAN.R-project.org/package=stargazer, last downloaded 23.09.2017
+- Hocking, T. D. (2017). directlabels: "Direct Labels for Multicolor Plots." R package version 2017.03.31. https://CRAN.R-project.org/package=directlabels, last downloaded 23.09.2017
+- Kahle, D. and Wickham, H. (2016). ggmap: "Spatial Visualization with ggplot2." R package version 2.6.1 The R Journal, 5(1), 144-161. URL http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf, last downloaded 23.09.2017
+- Kranz, S. (2015). RTutor: "R problem sets with automatic test of solution and hints." R package version 2015.12.16. https://github.com/skranz/RTutor, last downloaded 23.09.2017
+- R Core Team (2016). R: "A language and environment for statistical computing." R version 3.4.0. R Foundation for Statistical Computing, Vienna, Austria. URL https://www.R-project.org/., last downloaded 23.09.2017
+- R Core Team (2016). foreign: "Read Data Stored by Minitab, S, SAS, SPSS, Stata, Systat, Weka, dBase, ...." R package version 0.8-67. https://CRAN.R-project.org/package=foreign, last downloaded 23.09.2017
+- Robinson, D. (2017). broom: "Convert Statistical Analysis Objects into Tidy Data Frames." R package version 0.4.2 https://CRAN.R-project.org/package=broom, last downloaded 23.09.2017
+- RStudio Team (2015). RStudio: "Integrated Development for R.", RStudio Version 1.0.143 RStudio Inc., Boston, MA URL http://www.rstudio.com/.
+- Slowikowski, K. (2016). ggrepel: "Repulsive Text and Label Geoms for 'ggplot2'." R package version 0.6.5. https://CRAN.R-project.org/package=ggrepel, last downloaded 23.09.2017
+- Stephens, J. (2016). yaml: "Methods to Convert R Data to YAML and Back." R package version 2.1.14, https://CRAN.R-project.org/package=yaml
+- Wickham, H. (2007). reshape2: "Reshaping Data with the reshape Package." R package version 1.4.2. Journal of Statistical Software, 21(12), 1-20. URL http://www.jstatsoft.org/v21/i12/., last downloaded 23.09.2017
+- Wickham, H. (2009). ggplot2: "Elegant Graphics for Data Analysis." R package version 2.2.1. Springer-Verlag New York
+- Wickham, H. and Francois, R. (2016). dplyr: "A Grammar of Data Manipulation." R package version 0.5.0. https://CRAN.R-project.org/package=dplyr, last downloaded 23.09.2017
+- Wickham, H. (2016). scales: "Scale Functions for Visualization." R package version 0.4.1. https://CRAN.R-project.org/package=scales, last downloaded 23.09.2017
+- Zeileis, A., Hothorn, T. (2002). lmtest: "Diagnostic Checking in Regression Relationships." R package version 0.9-35. R News 2(3), 7-10. URL http://CRAN.R-project.org/doc/Rnews/, last downloaded 23.09.2017
+- Zeileis, A. (2004). sandwich: "Econometric Computing with HC and HAC Covariance Matrix Estimators", Journal of Statistical Software 11(10), 1-17. URL http://www.jstatsoft.org/v11/i10/.
+
+### Changes on Data Sets
+
+I made several changes on the data sets to ease the analysis. To enable you to do the same analysis on your own with the original data sets, below i will explain which changes were made on the original data sets to get the data sets used in this problem set.
+
+i) `casehiller.txt`
+- **Derived from:** `caseshiller_metros.dta`
+- **Changes made:** Extraction and renaming of data from the three metropolitan areas New York City (original name: nyxr), Chicago (chxr), Los Angeles (lxxr) and the composite 20 (spcs20r), cutting them so that they start at 01.01.2000 and end at 01.01.2011 (using dt_m, which specifies the month, where dt_m = 480 stands for 01.01.2000 and dt_m = 612 stands for 01.01.2011)
+
+ii) `person_dataset.dta`
+- **Derived from:** `person_data.dta`
+- **Changes made:** The fourth column renamed to `group` (original name `datsource`) and `age_cat` converted to class character.
+
+iii) `personyear_trans_panel.dta`
+- **Derived from:** `personyear_transactions_panel.dta`
+- **Changes made:** The level rank of group changed so that equity analysts are first, lawyers second and securitization agents third, columns renamed to `Year` (year), `added_houses` (nummaddn_prev), `group` (datsource), `divestitures` (numdvst), `houses_bought` (numbuy_spec), `homeowner` (l_homeowner_adj), `multi_homeowner` (l_homeowner_adj_multi), `prop_NYC` (Lyrprop_NYC) and `prop_SoCal` (Lyrprop_SoCal), `age_cat` and `Year` converted to class character. A duummy variable that indicates membership to the securitization group is introduced (1 if yes, 0 if not).
+
+iv) `person_included.dta`
+- **Derived from:** `person_data.dta`
+- **Changes made:** The fourth column is renamed to `group`; the data set is filtered so that only the people of the final sample are included in the resulting data set. `age_cat` is converted to class character.
+
+v) `performance_index.dta`
+- **Derived from:** `indivperformance_wide.dta`
+- **Changes made:** The index levels are calculated by computing the weighted mean of totalvalue_eoq/totalvalue_buyhold_eoq for every quarter where the weights are given by totalvalue_eoq_10160 (the initial quarter 2000:I) for all three groups.
+
+vi) `performance.dta`
+- **Derived from:** `indivperformance_wide.dta`
+- **Changes made:** Columns renamed.
+
+vii) `income_desc.dta`
+- **Derived from:** `hmda_matches.dta`
+- **Changes made:** Rows without real income data and outside the observation period are excluded, a new column named `period` is assigned based on the period (pre-boom, boom, bust), values are aggregated on a person, period level, columns are renamed and unused columns dropped.
+
+viii) `vti_desc.dta`
+- **Derived from:** `hmda_matches.dta`
+- **Changes made:** Rows where the income is below 100 or not available are excluded, as well as rows where the vti is not available or rows which are not inside the observation period, a new column named `period` is assigned based on the period (pre-boom, boom , bust), values are aggregated on a person, period level, columns are renamed and unused columns dropped.
+
+ix) `properties.dta`
+- **Derived from:** `property_data.dta`
+- **Changes made:** Some columns are renamed specifically `total_houses` (housetot), `group` (datsource) and `has_mrtg`(hasmrtg) and the level rank of group changed so that equity analysts are first, lawyers second and securitization agents third.

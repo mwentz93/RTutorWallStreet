@@ -1,0 +1,105 @@
+orgvar | var | descr
+
+date | date | The year and month for the index.
+
+NY.NewYork | NY.NewYork | The case-shiller index for the metropolitan area of New York.
+
+IL.Chicago | IL.Chicago | The case-shiller index for the metropolitan area of Chicago.
+
+CA.LosAngeles | CA.LosAngeles | The case-shiller index for the metropolitan area of Los Angeles.
+
+Composite.20 | Composite.20 |  The composite case-shiller index for all 20 metropolitan areas.
+
+keyident | keyident | Variable that identifies the person throughout all of our datasets.
+
+age | age | The exact age of the person at the date the data was collected.
+
+age_cat | age_cat | The age category of the person at the date the data was collected.
+
+group | group | Indicates the group of the person, can be Securitization, Equity Analysts or Lawyers
+
+buyers | buyers | Indicates weather the securitization agent is a buyer or seller of the securities.
+
+Mreason | Mreason | Gives the reason why a person was not included in the sample or states that the person owned no homes.
+
+Year | Year | Gives the year of the transaction.
+
+added_houses | added_houses | Indicates the number of homes added compared to the previous year.
+
+divestitures | divestitures | The number of divestures in this year.
+
+groupd | groupd | Dummy variable, 1 if member of the securitization group, 0 if not.
+
+houses_bought | houses_bought | Number of houses bought during this period.
+
+homeowner | homeowner | Dummy variable that indicates weather the person was a homeowner at the end of the previous period.
+
+multi_homeowner | multi_homeowner | Dummy variable; indicates weather the person owned more than one home at the end of the previous year (=1) or not (=0).
+
+prop_NYC | prop_NYC | Dummy variable; 1 if the person owns a property in the New York City Area
+
+prop_SoCal | prop_SoCal | Dummy variable; 1 if the person owns a property in the Southern Californian Area
+
+company_id | company_id | Indicates the company the person is working for. Not available for every person in the sample.
+
+Securitization | Securitization | The performance index for the securitization group.
+
+Equity.Analysts | Equity.Analysts | The performance index for the equity analysts group (control group).
+
+Lawyers | Lawyers | The performance index for the lawyers group (control group).
+
+purchaseprice | purchaseprice | Nominal price of the property when bought.
+
+saleprice | saleprice | Nominal price of the property when sold.
+
+total_houses | total_houses | Total homes owned by the person.
+
+mrtgintrate | mrtgintrate | Interest rate of the mortgage on the house.
+
+purchaseyear | purchaseyear | Indicates the year of purchase.
+
+saleyear | saleyear | Indicates the year of sale.
+
+intrate_conform | intrate_conform | The conforming interest rate in the year the house is bought.
+
+intrate_jumbo | intrate_jumbo | The jumbo interest rate in the year the house is bought.
+
+ltv | ltv | The loan-to-value at purchase.
+
+has_mrtg | has_mrtg | Dummy variable; 1 if the property is debited with a mortgage.
+
+purchaseprice_real | purchaseprice_real | The real purchaseprice, with base year 2006.
+
+saleprice_real | saleprice_real | The real saleprice, with base year 2006.
+
+income | income | The nominal income at purchase date, with base year 2006.
+
+income_real | income_real | The real income, with base year 2006.
+
+vti | vti | The value-to-income is the ratio of value and income.
+
+properties_owned_2000I | properties_owned_2000I | The number of properties owned in 2000 Q1.
+
+properties_owned_2000II | properties_owned_2000II | The number of properties owned in 2000 Q2.
+
+properties_value_2000I | properties_value_2000I | The value of the properties owned in 2000 Q1.
+
+properties_value_2000II | properties_value_2000II | The value of the properties owned in 2000 Q2.
+
+cash_2000I | cash_2000I | The value of the cash in the cash account in 2000 Q1.
+
+cash_2000II | cash_2000II | The value of the cash in the cash account in 2000 Q2.
+
+totalvalue_2000I | totalvalue_2000I | The total value of the trading portfolio in 2000 Q1.
+
+totalvalue_2000II | totalvalue_2000II | The total value of the trading portfolio in 2000 Q2.
+
+totalvalue_buyhold_2000I | totalvalue_buyhold_2000I | The total value of the buy-and-hold portfolio in 2000 Q1.
+
+totalvalue_buyhold_2000I | totalvalue_buyhold_2000I | The total value of the buy-and-hold portfolio in 2000 Q2.
+
+share_wealth_2000I | share_wealth_2000I | The share of the persons wealth invested in housing in 2000 Q1.
+
+share_wealth_2000II | share_wealth_2000II | The share of the persons wealth invested in housing in 2000 Q2.
+
+period | period | Indicates if the data is from the pre-boom, boom or bust period.
