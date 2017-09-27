@@ -17,7 +17,8 @@ devtools::install_github("mwentz93/RTutorWallStreet", upgrade_dependencies=FALSE
 ```
 
 ## 2. Show and work on the problem set
-To start the problem set first create a working directory and store the files from the inst/ps/WallStreet/material folder there. Then adapt and run the following code.
+To start the problem set first create a working directory in which files like the data sets and your solution will be stored. Then adapt and run the following code.
+
 ```s
 library(RTutorWallStreet)
 
